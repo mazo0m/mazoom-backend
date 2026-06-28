@@ -1,0 +1,126 @@
+// ============================================================================
+// Mazoom — Interactive Digital Invitation Web App
+// Prisma Schema Definition
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+enum Role {
+  ADMIN
+  CLIENT
+}
+
+enum OrderStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ============================================================================
+// Models
+// ============================================================================
+
+/// Registered users — either platform admins or clients who create invitations.
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  phoneNumber  String   @unique @map("phone_number")
+  role         Role     @default(CLIENT)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  orders      Order[]
+  invitations Invitation[]
+
+  @@map("users")
+}
+
+/// Invitation design templates managed by admins.
+/// Clients browse and select a template to build their invitation.
+model Template {
+  id           String   @id @default(uuid()) @db.Uuid
+  title        String
+  thumbnailUrl String   @map("thumbnail_url")
+  demoLink     String   @map("demo_link")
+  price        Decimal  @db.Decimal(10, 2)
+  isPremium    Boolean  @default(false) @map("is_premium")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  orders      Order[]
+  invitations Invitation[]
+
+  @@map("templates")
+}
+
+/// Purchase / unlock orders — tracks when a client requests access
+/// to a premium template.
+model Order {
+  id         String      @id @default(uuid()) @db.Uuid
+  userId     String      @map("user_id") @db.Uuid
+  templateId String      @map("template_id") @db.Uuid
+  status     OrderStatus @default(PENDING)
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([templateId])
+  @@map("orders")
+}
+
+/// A published digital invitation created by a client using a chosen template.
+/// The unique `slug` serves as the shareable URL path (e.g. /invite/ahmed-wedding).
+model Invitation {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  templateId  String   @map("template_id") @db.Uuid
+  slug        String   @unique
+  eventDate   DateTime @map("event_date")
+  locationUrl String   @map("location_url")
+  welcomeText String   @map("welcome_text") @db.Text
+  images      String[]
+  musicUrl    String?  @map("music_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  rsvps    RSVP[]
+
+  @@index([userId])
+  @@index([templateId])
+  @@index([slug])
+  @@map("invitations")
+}
+
+/// Guest RSVP responses linked to a specific invitation.
+model RSVP {
+  id              String   @id @default(uuid()) @db.Uuid
+  invitationId    String   @map("invitation_id") @db.Uuid
+  guestName       String   @map("guest_name")
+  willAttend      Boolean  @map("will_attend")
+  companionsCount Int      @default(0) @map("companions_count")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@index([invitationId])
+  @@map("rsvps")
+}

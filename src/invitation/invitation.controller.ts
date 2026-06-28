@@ -1,0 +1,240 @@
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Put,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { Role } from '@prisma/client';
+import { JwtAuthGuard, RolesGuard } from '../auth/guards';
+import { Roles, GetUser } from '../auth/decorators';
+import { InvitationService } from './invitation.service';
+import { CreateInvitationDto, UpdateInvitationDto } from './dto';
+
+@ApiTags('Invitations')
+@Controller('invitations')
+export class InvitationController {
+  constructor(private readonly invitationService: InvitationService) {}
+
+  /**
+   * POST /invitations
+   * Creates a new invitation. Client only.
+   * The client must have an APPROVED order for the chosen template.
+   */
+  @Post()
+  @Roles(Role.CLIENT)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Create a new invitation',
+    description:
+      'Creates a digital invitation for the authenticated client. ' +
+      'Requires an APPROVED order for the specified template.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Invitation created successfully',
+    schema: {
+      example: {
+        id: 'e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b',
+        userId: 'c3a1e1d0-4f6a-4b2c-9e8f-1a2b3c4d5e6f',
+        templateId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+        slug: 'ahmed-wedding',
+        eventDate: '2025-09-15T18:00:00.000Z',
+        locationUrl: 'https://maps.google.com/?q=24.7136,46.6753',
+        welcomeText: 'يسرنا دعوتكم لحضور حفل زفاف أحمد وسارة',
+        images: [
+          'https://cdn.mazoom.app/img/photo1.jpg',
+          'https://cdn.mazoom.app/img/photo2.jpg',
+        ],
+        musicUrl: 'https://cdn.mazoom.app/audio/wedding-nasheed.mp3',
+        createdAt: '2025-09-01T12:00:00.000Z',
+        template: {
+          id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+          title: 'Royal Gold Wedding',
+          thumbnailUrl: 'https://cdn.mazoom.app/templates/royal-gold.jpg',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'No approved order for this template',
+    schema: {
+      example: {
+        statusCode: 400,
+        message:
+          'You do not have an approved order for this template. ' +
+          'Please purchase the template and wait for admin approval before creating an invitation.',
+        error: 'Bad Request',
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized — missing or invalid JWT' })
+  @ApiResponse({
+    status: 409,
+    description: 'Slug already taken',
+    schema: {
+      example: {
+        statusCode: 409,
+        message:
+          'The slug "ahmed-wedding" is already taken. Please choose a different one.',
+        error: 'Conflict',
+      },
+    },
+  })
+  create(
+    @GetUser('id') userId: string,
+    @Body() dto: CreateInvitationDto,
+  ) {
+    return this.invitationService.create(userId, dto);
+  }
+
+  /**
+   * PUT /invitations/:id
+   * Updates an existing invitation. Client only (must be the owner).
+   */
+  @Put(':id')
+  @Roles(Role.CLIENT)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Update an invitation',
+    description:
+      'Updates an existing invitation. Only the invitation owner (client) can update it. ' +
+      'The templateId cannot be changed.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID of the invitation to update',
+    example: 'e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b',
+  })
+  @ApiResponse({ status: 200, description: 'Invitation updated successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized — missing or invalid JWT' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden — you are not the owner of this invitation',
+  })
+  @ApiResponse({ status: 404, description: 'Invitation not found' })
+  @ApiResponse({ status: 409, description: 'Slug already taken' })
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetUser('id') userId: string,
+    @Body() dto: UpdateInvitationDto,
+  ) {
+    return this.invitationService.update(id, userId, dto);
+  }
+
+  /**
+   * GET /invitations/slug/:slug
+   * Public endpoint — used by the frontend to fetch invitation data
+   * when a guest opens a shareable link (e.g. mazoom.com/invite/ahmed-wedding).
+   */
+  @Get('slug/:slug')
+  @ApiOperation({
+    summary: 'Get invitation by slug (Public)',
+    description:
+      'Fetches a published invitation by its unique slug. ' +
+      'Used by the frontend when a guest opens a shareable link.',
+  })
+  @ApiParam({
+    name: 'slug',
+    description: 'Unique URL slug of the invitation',
+    example: 'ahmed-wedding',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Invitation data',
+    schema: {
+      example: {
+        id: 'e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b',
+        templateId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+        slug: 'ahmed-wedding',
+        eventDate: '2025-09-15T18:00:00.000Z',
+        locationUrl: 'https://maps.google.com/?q=24.7136,46.6753',
+        welcomeText: 'يسرنا دعوتكم لحضور حفل زفاف أحمد وسارة',
+        images: [
+          'https://cdn.mazoom.app/img/photo1.jpg',
+          'https://cdn.mazoom.app/img/photo2.jpg',
+        ],
+        musicUrl: 'https://cdn.mazoom.app/audio/wedding-nasheed.mp3',
+        createdAt: '2025-09-01T12:00:00.000Z',
+        template: {
+          id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+          title: 'Royal Gold Wedding',
+          thumbnailUrl: 'https://cdn.mazoom.app/templates/royal-gold.jpg',
+          demoLink: 'https://demo.mazoom.app/royal-gold',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Invitation not found' })
+  findBySlug(@Param('slug') slug: string) {
+    return this.invitationService.findBySlug(slug);
+  }
+
+  /**
+   * GET /invitations/:id/rsvps
+   * Returns all RSVPs for a specific invitation with statistics.
+   * Client only (must be the invitation owner).
+   */
+  @Get(':id/rsvps')
+  @Roles(Role.CLIENT)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Get RSVPs for an invitation',
+    description:
+      'Returns all RSVP responses for a specific invitation, including attendance statistics. ' +
+      'Only the invitation owner can access this.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID of the invitation',
+    example: 'e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'RSVPs with statistics',
+    schema: {
+      example: {
+        invitationId: 'e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b',
+        statistics: {
+          totalResponses: 25,
+          totalAttending: 38,
+          totalExcused: 5,
+          totalCompanions: 18,
+        },
+        rsvps: [
+          {
+            id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+            invitationId: 'e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b',
+            guestName: 'محمد العلي',
+            willAttend: true,
+            companionsCount: 2,
+            createdAt: '2025-09-05T10:30:00.000Z',
+          },
+        ],
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized — missing or invalid JWT' })
+  @ApiResponse({ status: 403, description: 'Forbidden — you are not the invitation owner' })
+  @ApiResponse({ status: 404, description: 'Invitation not found' })
+  findRsvps(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetUser('id') userId: string,
+  ) {
+    return this.invitationService.findRsvps(id, userId);
+  }
+}

@@ -1,0 +1,79 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsArray,
+  IsDateString,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUrl,
+  IsUUID,
+  Matches,
+} from 'class-validator';
+
+export class CreateInvitationDto {
+  @ApiProperty({
+    description: 'UUID of the template to use for this invitation',
+    example: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+    format: 'uuid',
+  })
+  @IsUUID('4', { message: 'templateId must be a valid UUID' })
+  @IsNotEmpty({ message: 'Template ID is required' })
+  templateId: string;
+
+  @ApiProperty({
+    description:
+      'URL-friendly slug for the shareable link (e.g. mazoom.com/invite/ahmed-wedding)',
+    example: 'ahmed-wedding',
+  })
+  @IsString()
+  @IsNotEmpty({ message: 'Slug is required' })
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
+    message:
+      'Slug must be lowercase alphanumeric with hyphens only (e.g. "ahmed-wedding")',
+  })
+  slug: string;
+
+  @ApiProperty({
+    description: 'Event date and time in ISO 8601 format',
+    example: '2025-09-15T18:00:00.000Z',
+  })
+  @IsDateString({}, { message: 'eventDate must be a valid ISO 8601 date' })
+  @IsNotEmpty({ message: 'Event date is required' })
+  eventDate: string;
+
+  @ApiProperty({
+    description: 'Google Maps or venue URL for the event location',
+    example: 'https://maps.google.com/?q=24.7136,46.6753',
+  })
+  @IsUrl({}, { message: 'locationUrl must be a valid URL' })
+  @IsNotEmpty({ message: 'Location URL is required' })
+  locationUrl: string;
+
+  @ApiProperty({
+    description: 'Welcome / greeting message displayed on the invitation',
+    example: 'يسرنا دعوتكم لحضور حفل زفاف أحمد وسارة',
+  })
+  @IsString()
+  @IsNotEmpty({ message: 'Welcome text is required' })
+  welcomeText: string;
+
+  @ApiProperty({
+    description: 'Array of image URLs to display in the invitation gallery',
+    example: [
+      'https://cdn.mazoom.app/img/photo1.jpg',
+      'https://cdn.mazoom.app/img/photo2.jpg',
+    ],
+    type: [String],
+  })
+  @IsArray({ message: 'images must be an array of URLs' })
+  @IsUrl({}, { each: true, message: 'Each image must be a valid URL' })
+  images: string[];
+
+  @ApiPropertyOptional({
+    description: 'Optional background music URL for the invitation page',
+    example: 'https://cdn.mazoom.app/audio/wedding-nasheed.mp3',
+  })
+  @IsOptional()
+  @IsUrl({}, { message: 'musicUrl must be a valid URL' })
+  musicUrl?: string;
+}
