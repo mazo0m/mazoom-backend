@@ -6,6 +6,13 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // ── CORS ────────────────────────────────────────────────────────────
+  // Allow the Next.js frontend (port 3001) to communicate with the API.
+  app.enableCors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:3001',
+    credentials: true,
+  });
+
   // Enable global validation so DTOs are automatically validated
   app.useGlobalPipes(
     new ValidationPipe({
