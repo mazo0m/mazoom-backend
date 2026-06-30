@@ -22,7 +22,7 @@ export class UserService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('errors.user_not_found');
     }
 
     const profile = { ...user };
@@ -39,7 +39,7 @@ export class UserService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('errors.user_not_found');
     }
 
     const updateData: any = {};
@@ -57,7 +57,7 @@ export class UserService {
         where: { email: dto.email },
       });
       if (existingEmail) {
-        throw new ConflictException('Email is already registered');
+        throw new ConflictException('errors.email_registered');
       }
       updateData.email = dto.email;
     }
@@ -68,7 +68,7 @@ export class UserService {
         where: { phoneNumber: dto.phoneNumber },
       });
       if (existingPhone) {
-        throw new ConflictException('Phone number is already registered');
+        throw new ConflictException('errors.phone_registered');
       }
       updateData.phoneNumber = dto.phoneNumber;
     }

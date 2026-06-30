@@ -46,7 +46,7 @@ export class TemplateService {
     });
 
     if (!template) {
-      throw new NotFoundException(`Template with ID "${id}" not found`);
+      throw new NotFoundException(`errors.template_not_found|${id}`);
     }
 
     return template;
