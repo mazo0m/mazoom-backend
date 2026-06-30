@@ -45,22 +45,29 @@ export class TemplateController {
       example: {
         id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
         title: 'Royal Gold Wedding',
-        description: 'A luxurious gold-themed wedding invitation template with elegant animations.',
+        description:
+          'A luxurious gold-themed wedding invitation template with elegant animations.',
         previewImage: 'https://cdn.mazoom.app/templates/royal-gold.jpg',
         demoLink: 'https://demo.mazoom.app/royal-gold',
         price: '149.99',
         editableFields: {
           eventTitle: { type: 'string', label: 'Event Title' },
-          eventDate: { type: 'date', label: 'Event Date' }
+          eventDate: { type: 'date', label: 'Event Date' },
         },
         isPremium: true,
         createdAt: '2025-09-01T12:00:00.000Z',
       },
     },
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized — missing or invalid JWT' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized — missing or invalid JWT',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden — requires ADMIN role' })
-  @ApiResponse({ status: 400, description: 'Validation failed — invalid input data' })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation failed — invalid input data',
+  })
   create(@Body() dto: CreateTemplateDto) {
     return this.templateService.create(dto);
   }
@@ -83,13 +90,14 @@ export class TemplateController {
         {
           id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
           title: 'Royal Gold Wedding',
-          description: 'A luxurious gold-themed wedding invitation template with elegant animations.',
+          description:
+            'A luxurious gold-themed wedding invitation template with elegant animations.',
           previewImage: 'https://cdn.mazoom.app/templates/royal-gold.jpg',
           demoLink: 'https://demo.mazoom.app/royal-gold',
           price: '149.99',
           editableFields: {
             eventTitle: { type: 'string', label: 'Event Title' },
-            eventDate: { type: 'date', label: 'Event Date' }
+            eventDate: { type: 'date', label: 'Event Date' },
           },
           isPremium: true,
           createdAt: '2025-09-01T12:00:00.000Z',
@@ -97,13 +105,14 @@ export class TemplateController {
         {
           id: 'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e',
           title: 'Elegant Rose',
-          description: 'A romantic floral design perfect for weddings and anniversaries.',
+          description:
+            'A romantic floral design perfect for weddings and anniversaries.',
           previewImage: 'https://cdn.mazoom.app/templates/elegant-rose.jpg',
           demoLink: 'https://demo.mazoom.app/elegant-rose',
           price: '99.99',
           editableFields: {
             eventTitle: { type: 'string', label: 'Event Title' },
-            eventDate: { type: 'date', label: 'Event Date' }
+            eventDate: { type: 'date', label: 'Event Date' },
           },
           isPremium: false,
           createdAt: '2025-08-20T10:00:00.000Z',
@@ -137,13 +146,14 @@ export class TemplateController {
       example: {
         id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
         title: 'Royal Gold Wedding',
-        description: 'A luxurious gold-themed wedding invitation template with elegant animations.',
+        description:
+          'A luxurious gold-themed wedding invitation template with elegant animations.',
         previewImage: 'https://cdn.mazoom.app/templates/royal-gold.jpg',
         demoLink: 'https://demo.mazoom.app/royal-gold',
         price: '149.99',
         editableFields: {
           eventTitle: { type: 'string', label: 'Event Title' },
-          eventDate: { type: 'date', label: 'Event Date' }
+          eventDate: { type: 'date', label: 'Event Date' },
         },
         isPremium: true,
         createdAt: '2025-09-01T12:00:00.000Z',

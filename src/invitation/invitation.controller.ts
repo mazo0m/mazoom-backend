@@ -80,7 +80,10 @@ export class InvitationController {
       },
     },
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized — missing or invalid JWT' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized — missing or invalid JWT',
+  })
   @ApiResponse({
     status: 409,
     description: 'Slug already taken',
@@ -93,10 +96,7 @@ export class InvitationController {
       },
     },
   })
-  create(
-    @GetUser('id') userId: string,
-    @Body() dto: CreateInvitationDto,
-  ) {
+  create(@GetUser('id') userId: string, @Body() dto: CreateInvitationDto) {
     return this.invitationService.create(userId, dto);
   }
 
@@ -120,7 +120,10 @@ export class InvitationController {
     example: 'e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b',
   })
   @ApiResponse({ status: 200, description: 'Invitation updated successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized — missing or invalid JWT' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized — missing or invalid JWT',
+  })
   @ApiResponse({
     status: 403,
     description: 'Forbidden — you are not the owner of this invitation',
@@ -228,8 +231,14 @@ export class InvitationController {
       },
     },
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized — missing or invalid JWT' })
-  @ApiResponse({ status: 403, description: 'Forbidden — you are not the invitation owner' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized — missing or invalid JWT',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden — you are not the invitation owner',
+  })
   @ApiResponse({ status: 404, description: 'Invitation not found' })
   findRsvps(
     @Param('id', ParseUUIDPipe) id: string,

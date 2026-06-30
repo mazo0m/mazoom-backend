@@ -25,7 +25,8 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    const { passwordHash, ...profile } = user;
+    const profile = { ...user };
+    delete (profile as any).passwordHash;
     return profile;
   }
 
@@ -74,7 +75,10 @@ export class UserService {
 
     // Hash the password if it's being updated
     if (dto.password) {
-      updateData.passwordHash = await bcrypt.hash(dto.password, this.SALT_ROUNDS);
+      updateData.passwordHash = await bcrypt.hash(
+        dto.password,
+        this.SALT_ROUNDS,
+      );
     }
 
     const updatedUser = await this.prisma.user.update({
@@ -82,7 +86,8 @@ export class UserService {
       data: updateData,
     });
 
-    const { passwordHash, ...profile } = updatedUser;
+    const profile = { ...updatedUser };
+    delete (profile as any).passwordHash;
     return profile;
   }
 }

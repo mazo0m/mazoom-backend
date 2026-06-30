@@ -1,10 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Put,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -25,8 +19,9 @@ export class UserController {
 
   @Get('profile')
   @ApiOperation({
-    summary: 'Get the current user\'s profile details',
-    description: 'Retrieves the full profile details for the authenticated user.',
+    summary: "Get the current user's profile details",
+    description:
+      'Retrieves the full profile details for the authenticated user.',
   })
   @ApiResponse({
     status: 200,
@@ -42,8 +37,9 @@ export class UserController {
 
   @Put('profile')
   @ApiOperation({
-    summary: 'Update the current user\'s profile details',
-    description: 'Updates fields like names, email, phone, and password for the authenticated user.',
+    summary: "Update the current user's profile details",
+    description:
+      'Updates fields like names, email, phone, and password for the authenticated user.',
   })
   @ApiResponse({
     status: 200,
@@ -59,12 +55,10 @@ export class UserController {
   })
   @ApiResponse({
     status: 409,
-    description: 'Conflict — email or phone number already in use by another account',
+    description:
+      'Conflict — email or phone number already in use by another account',
   })
-  updateProfile(
-    @GetUser('id') userId: string,
-    @Body() dto: UpdateProfileDto,
-  ) {
+  updateProfile(@GetUser('id') userId: string, @Body() dto: UpdateProfileDto) {
     return this.userService.updateProfile(userId, dto);
   }
 }

@@ -29,7 +29,10 @@ export class PurchaseController {
       'Returns all purchased template records belonging to the authenticated client, sorted by newest first.',
   })
   @ApiResponse({ status: 200, description: "List of client's purchases" })
-  @ApiResponse({ status: 401, description: 'Unauthorized — missing or invalid JWT' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized — missing or invalid JWT',
+  })
   findMyPurchases(@GetUser('id') userId: string) {
     return this.purchaseService.findMyPurchases(userId);
   }
@@ -47,7 +50,10 @@ export class PurchaseController {
       'Returns all template purchase records from all users. Requires ADMIN role.',
   })
   @ApiResponse({ status: 200, description: 'List of all purchases' })
-  @ApiResponse({ status: 401, description: 'Unauthorized — missing or invalid JWT' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized — missing or invalid JWT',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden — requires ADMIN role' })
   findAll() {
     return this.purchaseService.findAll();

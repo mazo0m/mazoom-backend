@@ -45,7 +45,10 @@ export class RsvpController {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Validation failed — invalid input data' })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation failed — invalid input data',
+  })
   create(@Body() dto: CreateRsvpDto) {
     return this.rsvpService.create(dto);
   }

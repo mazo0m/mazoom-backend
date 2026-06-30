@@ -19,7 +19,10 @@ import { Role } from '@prisma/client';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
 import { Roles, GetUser } from '../auth/decorators';
 import { PurchaseRequestService } from './purchase-request.service';
-import { CreatePurchaseRequestDto, UpdatePurchaseRequestStatusDto } from './dto';
+import {
+  CreatePurchaseRequestDto,
+  UpdatePurchaseRequestStatusDto,
+} from './dto';
 
 @ApiTags('Purchase Requests')
 @ApiBearerAuth('JWT-auth')
@@ -45,12 +48,12 @@ export class PurchaseRequestController {
     status: 201,
     description: 'Purchase request created successfully',
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized — missing or invalid JWT' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized — missing or invalid JWT',
+  })
   @ApiResponse({ status: 404, description: 'Template not found' })
-  create(
-    @GetUser('id') userId: string,
-    @Body() dto: CreatePurchaseRequestDto,
-  ) {
+  create(@GetUser('id') userId: string, @Body() dto: CreatePurchaseRequestDto) {
     return this.purchaseRequestService.create(userId, dto);
   }
 
@@ -67,7 +70,10 @@ export class PurchaseRequestController {
       'Returns all purchase requests belonging to the authenticated client, sorted by newest first.',
   })
   @ApiResponse({ status: 200, description: "List of client's requests" })
-  @ApiResponse({ status: 401, description: 'Unauthorized — missing or invalid JWT' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized — missing or invalid JWT',
+  })
   findMyRequests(@GetUser('id') userId: string) {
     return this.purchaseRequestService.findMyRequests(userId);
   }
@@ -85,7 +91,10 @@ export class PurchaseRequestController {
       'Returns all purchase requests from all users. Requires ADMIN role.',
   })
   @ApiResponse({ status: 200, description: 'List of all purchase requests' })
-  @ApiResponse({ status: 401, description: 'Unauthorized — missing or invalid JWT' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized — missing or invalid JWT',
+  })
   @ApiResponse({ status: 403, description: 'Forbidden — requires ADMIN role' })
   findAll() {
     return this.purchaseRequestService.findAll();
@@ -112,8 +121,14 @@ export class PurchaseRequestController {
     status: 200,
     description: 'Status updated successfully',
   })
-  @ApiResponse({ status: 400, description: 'Request has already been processed' })
-  @ApiResponse({ status: 401, description: 'Unauthorized — missing or invalid JWT' })
+  @ApiResponse({
+    status: 400,
+    description: 'Request has already been processed',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized — missing or invalid JWT',
+  })
   @ApiResponse({ status: 404, description: 'Purchase request not found' })
   updateStatus(
     @Param('id', ParseUUIDPipe) id: string,

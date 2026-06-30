@@ -92,11 +92,7 @@ export class InvitationService {
   // Update invitation (Client only — owner)
   // ──────────────────────────────────────────────
 
-  async update(
-    invitationId: string,
-    userId: string,
-    dto: UpdateInvitationDto,
-  ) {
+  async update(invitationId: string, userId: string, dto: UpdateInvitationDto) {
     // 1. Find the invitation
     const invitation = await this.prisma.invitation.findUnique({
       where: { id: invitationId },
@@ -142,8 +138,10 @@ export class InvitationService {
 
     if (dto.slug !== undefined) updateData.slug = dto.slug;
     if (dto.eventTitle !== undefined) updateData.eventTitle = dto.eventTitle;
-    if (dto.eventLocation !== undefined) updateData.eventLocation = dto.eventLocation;
-    if (dto.eventDate !== undefined) updateData.eventDate = new Date(dto.eventDate);
+    if (dto.eventLocation !== undefined)
+      updateData.eventLocation = dto.eventLocation;
+    if (dto.eventDate !== undefined)
+      updateData.eventDate = new Date(dto.eventDate);
     if (dto.locationUrl !== undefined) updateData.locationUrl = dto.locationUrl;
     if (dto.welcomeText !== undefined) updateData.welcomeText = dto.welcomeText;
     if (dto.images !== undefined) updateData.images = dto.images;
@@ -195,9 +193,7 @@ export class InvitationService {
     });
 
     if (!invitation) {
-      throw new NotFoundException(
-        `Invitation with slug "${slug}" not found`,
-      );
+      throw new NotFoundException(`Invitation with slug "${slug}" not found`);
     }
 
     return this.mapInvitationResponse(invitation);
@@ -252,10 +248,7 @@ export class InvitationService {
         totalResponses,
         totalAttending,
         totalExcused,
-        totalCompanions: attending.reduce(
-          (sum, r) => sum + r.guestsCount,
-          0,
-        ),
+        totalCompanions: attending.reduce((sum, r) => sum + r.guestsCount, 0),
       },
       rsvps,
     };

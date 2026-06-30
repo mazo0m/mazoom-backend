@@ -21,7 +21,8 @@ export class CreateTemplateDto {
 
   @ApiProperty({
     description: 'Detailed description of the invitation template',
-    example: 'A luxurious gold-themed wedding invitation template with elegant animations.',
+    example:
+      'A luxurious gold-themed wedding invitation template with elegant animations.',
   })
   @IsString()
   @IsNotEmpty({ message: 'Description is required' })

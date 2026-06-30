@@ -52,8 +52,7 @@ export class UpdateProfileDto {
   lastName?: string;
 
   @ApiProperty({
-    description:
-      'Phone number in international format (e.g. +966501234567)',
+    description: 'Phone number in international format (e.g. +966501234567)',
     example: '+962793809686',
     required: false,
   })

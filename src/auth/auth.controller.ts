@@ -1,15 +1,5 @@
-import {
-  Body,
-  Controller,
-  Post,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { Body, Controller, Post, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto } from './dto';
 
@@ -72,8 +62,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Login to an existing account',
-    description:
-      'Validates email and password, then returns a JWT token.',
+    description: 'Validates email and password, then returns a JWT token.',
   })
   @ApiResponse({
     status: 200,
