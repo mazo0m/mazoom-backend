@@ -20,20 +20,20 @@ export class CreateTemplateDto {
   title: string;
 
   @ApiProperty({
-    description: 'URL of the template thumbnail preview image',
-    example: 'https://cdn.mazoom.app/templates/royal-gold.jpg',
+    description: 'Detailed description of the invitation template',
+    example: 'A luxurious gold-themed wedding invitation template with elegant animations.',
   })
-  @IsUrl({}, { message: 'Thumbnail URL must be a valid URL' })
-  @IsNotEmpty({ message: 'Thumbnail URL is required' })
-  thumbnailUrl: string;
+  @IsString()
+  @IsNotEmpty({ message: 'Description is required' })
+  description: string;
 
   @ApiProperty({
-    description: 'URL of the live template demo page',
-    example: 'https://demo.mazoom.app/royal-gold',
+    description: 'URL of the template preview image',
+    example: 'https://cdn.mazoom.app/templates/royal-gold.jpg',
   })
-  @IsUrl({}, { message: 'Demo link must be a valid URL' })
-  @IsNotEmpty({ message: 'Demo link is required' })
-  demoLink: string;
+  @IsUrl({}, { message: 'Preview image URL must be a valid URL' })
+  @IsNotEmpty({ message: 'Preview image URL is required' })
+  previewImage: string;
 
   @ApiProperty({
     description: 'Price in SAR (max 2 decimal places)',
@@ -47,6 +47,24 @@ export class CreateTemplateDto {
   )
   @Min(0, { message: 'Price must be a non-negative number' })
   price: number;
+
+  @ApiProperty({
+    description: 'Structured fields that can be edited in this template (JSON)',
+    example: {
+      eventTitle: { type: 'string', label: 'Event Title', default: 'My Event' },
+      eventDate: { type: 'date', label: 'Event Date' },
+    },
+  })
+  @IsNotEmpty({ message: 'Editable fields are required' })
+  editableFields: any;
+
+  @ApiPropertyOptional({
+    description: 'URL of the live template demo page',
+    example: 'https://demo.mazoom.app/royal-gold',
+  })
+  @IsOptional()
+  @IsUrl({}, { message: 'Demo link must be a valid URL' })
+  demoLink?: string;
 
   @ApiPropertyOptional({
     description: 'Whether this is a premium template',

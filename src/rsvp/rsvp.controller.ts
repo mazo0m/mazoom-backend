@@ -4,12 +4,12 @@ import { RsvpService } from './rsvp.service';
 import { CreateRsvpDto } from './dto';
 
 @ApiTags('RSVPs')
-@Controller('rsvps')
+@Controller('rsvp')
 export class RsvpController {
   constructor(private readonly rsvpService: RsvpService) {}
 
   /**
-   * POST /rsvps
+   * POST /rsvp
    * Public endpoint — allows any guest to submit their RSVP.
    */
   @Post()
@@ -26,9 +26,10 @@ export class RsvpController {
       example: {
         id: 'a1b2c3d4-5678-4abc-def0-123456789abc',
         invitationId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
-        guestName: 'محمد العلي',
-        willAttend: true,
-        companionsCount: 2,
+        name: 'محمد العلي',
+        attendance: 'YES',
+        guestsCount: 2,
+        message: 'ألف مبروك! نسعد بحضور حفلكم الكريم.',
         createdAt: '2025-09-05T10:30:00.000Z',
       },
     },

@@ -3,20 +3,21 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { OrderStatus } from '@prisma/client';
+import { RequestStatus } from '@prisma/client';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateOrderDto, UpdateOrderStatusDto } from './dto';
+import { CreatePurchaseRequestDto, UpdatePurchaseRequestStatusDto } from './dto';
 
 @Injectable()
-export class OrderService {
+export class PurchaseRequestService {
   constructor(private readonly prisma: PrismaService) {}
 
   // ──────────────────────────────────────────────
-  // Create order (Client only)
+  // Create Purchase Request (Client only)
   // ──────────────────────────────────────────────
 
-  async create(userId: string, dto: CreateOrderDto) {
-    // 1. Verify the template exists
+  async create(userId: string, dto: CreatePurchaseRequestDto) {
+    // 1. Verify template exists
     const template = await this.prisma.template.findUnique({
       where: { id: dto.templateId },
     });
@@ -27,41 +28,43 @@ export class OrderService {
       );
     }
 
-    // 2. Create the order with default PENDING status
-    const order = await this.prisma.order.create({
+    // 2. Create purchase request
+    const request = await this.prisma.purchaseRequest.create({
       data: {
         userId,
         templateId: dto.templateId,
-        status: OrderStatus.PENDING,
+        contactEmail: dto.contactEmail,
+        contactPhone: dto.contactPhone,
+        status: RequestStatus.PENDING,
       },
       include: {
         template: {
           select: {
             id: true,
             title: true,
-            thumbnailUrl: true,
+            previewImage: true,
             price: true,
           },
         },
       },
     });
 
-    return order;
+    return request;
   }
 
   // ──────────────────────────────────────────────
-  // Client's own orders
+  // Client's own purchase requests
   // ──────────────────────────────────────────────
 
-  async findMyOrders(userId: string) {
-    return this.prisma.order.findMany({
+  async findMyRequests(userId: string) {
+    return this.prisma.purchaseRequest.findMany({
       where: { userId },
       include: {
         template: {
           select: {
             id: true,
             title: true,
-            thumbnailUrl: true,
+            previewImage: true,
             price: true,
           },
         },
@@ -71,11 +74,11 @@ export class OrderService {
   }
 
   // ──────────────────────────────────────────────
-  // All orders (Admin only)
+  // All purchase requests (Admin only)
   // ──────────────────────────────────────────────
 
   async findAll() {
-    return this.prisma.order.findMany({
+    return this.prisma.purchaseRequest.findMany({
       include: {
         user: {
           select: {
@@ -90,7 +93,7 @@ export class OrderService {
           select: {
             id: true,
             title: true,
-            thumbnailUrl: true,
+            previewImage: true,
             price: true,
           },
         },
@@ -100,49 +103,65 @@ export class OrderService {
   }
 
   // ──────────────────────────────────────────────
-  // Update order status (Admin only)
+  // Update status (Admin only)
   // ──────────────────────────────────────────────
 
-  async updateStatus(orderId: string, dto: UpdateOrderStatusDto) {
-    // 1. Find the order
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
+  async updateStatus(id: string, dto: UpdatePurchaseRequestStatusDto) {
+    // 1. Find the purchase request
+    const request = await this.prisma.purchaseRequest.findUnique({
+      where: { id },
     });
 
-    if (!order) {
-      throw new NotFoundException(`Order with ID "${orderId}" not found`);
+    if (!request) {
+      throw new NotFoundException(`Purchase request with ID "${id}" not found`);
     }
 
-    // 2. Only PENDING orders can be transitioned
-    if (order.status !== OrderStatus.PENDING) {
+    // 2. Only PENDING requests can be transitioned
+    if (request.status !== RequestStatus.PENDING) {
       throw new BadRequestException(
-        `Order has already been ${order.status.toLowerCase()}. Only PENDING orders can be updated.`,
+        `Purchase request has already been ${request.status.toLowerCase()}. Only PENDING requests can be updated.`,
       );
     }
 
-    // 3. Update the status
-    const updatedOrder = await this.prisma.order.update({
-      where: { id: orderId },
-      data: { status: dto.status },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
+    // 3. Process status update in a transaction
+    return this.prisma.$transaction(async (tx) => {
+      // Update request status
+      const updatedRequest = await tx.purchaseRequest.update({
+        where: { id },
+        data: { status: dto.status },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          template: {
+            select: {
+              id: true,
+              title: true,
+              price: true,
+            },
           },
         },
-        template: {
-          select: {
-            id: true,
-            title: true,
-            price: true,
-          },
-        },
-      },
-    });
+      });
 
-    return updatedOrder;
+      // If approved, create a Purchase record
+      if (dto.status === RequestStatus.APPROVED) {
+        const slug = `invite-${randomUUID().substring(0, 8)}`;
+        await tx.purchase.create({
+          data: {
+            userId: request.userId,
+            templateId: request.templateId,
+            purchaseRequestId: request.id,
+            slug,
+          },
+        });
+      }
+
+      return updatedRequest;
+    });
   }
 }

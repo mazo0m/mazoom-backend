@@ -14,9 +14,11 @@ export class TemplateService {
     const template = await this.prisma.template.create({
       data: {
         title: dto.title,
-        thumbnailUrl: dto.thumbnailUrl,
-        demoLink: dto.demoLink,
+        description: dto.description,
+        previewImage: dto.previewImage,
         price: dto.price,
+        editableFields: dto.editableFields,
+        demoLink: dto.demoLink,
         isPremium: dto.isPremium ?? false,
       },
     });

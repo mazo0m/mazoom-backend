@@ -5,7 +5,11 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { TemplateModule } from './template/template.module';
-import { OrderModule } from './order/order.module';
+import { PurchaseRequestModule } from './purchase-request/purchase-request.module';
+import { PurchaseModule } from './purchase/purchase.module';
+import { InvitationModule } from './invitation/invitation.module';
+import { RsvpModule } from './rsvp/rsvp.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -15,7 +19,11 @@ import { OrderModule } from './order/order.module';
     PrismaModule,
     AuthModule,
     TemplateModule,
-    OrderModule,
+    PurchaseRequestModule,
+    PurchaseModule,
+    InvitationModule,
+    RsvpModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,12 +1,14 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsBoolean,
+  IsEnum,
   IsInt,
   IsNotEmpty,
+  IsOptional,
   IsString,
   IsUUID,
   Min,
 } from 'class-validator';
+import { RsvpAttendance } from '@prisma/client';
 
 export class CreateRsvpDto {
   @ApiProperty({
@@ -24,21 +26,33 @@ export class CreateRsvpDto {
   })
   @IsString()
   @IsNotEmpty({ message: 'Guest name is required' })
-  guestName: string;
+  name: string;
 
   @ApiProperty({
-    description: 'Whether the guest will attend the event',
-    example: true,
+    description: 'Whether the guest will attend the event (YES / NO)',
+    enum: RsvpAttendance,
+    example: RsvpAttendance.YES,
   })
-  @IsBoolean({ message: 'willAttend must be a boolean (true/false)' })
-  willAttend: boolean;
+  @IsEnum(RsvpAttendance, {
+    message: 'attendance must be either YES or NO',
+  })
+  @IsNotEmpty({ message: 'Attendance status is required' })
+  attendance: RsvpAttendance;
 
   @ApiProperty({
-    description: 'Number of additional companions the guest will bring',
+    description: 'Number of additional guests/companions the guest will bring',
     example: 2,
     minimum: 0,
   })
-  @IsInt({ message: 'companionsCount must be an integer' })
-  @Min(0, { message: 'companionsCount cannot be negative' })
-  companionsCount: number;
+  @IsInt({ message: 'guestsCount must be an integer' })
+  @Min(0, { message: 'guestsCount cannot be negative' })
+  guestsCount: number;
+
+  @ApiPropertyOptional({
+    description: 'Optional personal message or note for the host',
+    example: 'ألف مبروك! نسعد بحضور حفلكم الكريم.',
+  })
+  @IsOptional()
+  @IsString()
+  message?: string;
 }

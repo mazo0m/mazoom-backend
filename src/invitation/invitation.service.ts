@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { OrderStatus } from '@prisma/client';
+import { RsvpAttendance } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateInvitationDto, UpdateInvitationDto } from './dto';
 
@@ -18,23 +18,34 @@ export class InvitationService {
   // ──────────────────────────────────────────────
 
   async create(userId: string, dto: CreateInvitationDto) {
-    // 1. Verify the client has an APPROVED order for this template
-    const approvedOrder = await this.prisma.order.findFirst({
-      where: {
-        userId,
-        templateId: dto.templateId,
-        status: OrderStatus.APPROVED,
+    // 1. Verify the client has access to this purchase
+    const purchase = await this.prisma.purchase.findUnique({
+      where: { id: dto.purchaseId },
+      include: {
+        invitation: true,
       },
     });
 
-    if (!approvedOrder) {
-      throw new BadRequestException(
-        'You do not have an approved order for this template. ' +
-          'Please purchase the template and wait for admin approval before creating an invitation.',
+    if (!purchase) {
+      throw new NotFoundException(
+        `Purchase with ID "${dto.purchaseId}" not found`,
       );
     }
 
-    // 2. Check slug uniqueness
+    if (purchase.userId !== userId) {
+      throw new ForbiddenException(
+        'You are not authorized to create an invitation for this purchase',
+      );
+    }
+
+    // 2. Ensure an invitation does not already exist for this purchase (1:1 relation)
+    if (purchase.invitation) {
+      throw new BadRequestException(
+        'An invitation has already been generated for this purchase. Please update the existing invitation.',
+      );
+    }
+
+    // 3. Check slug uniqueness
     const existingSlug = await this.prisma.invitation.findUnique({
       where: { slug: dto.slug },
     });
@@ -45,30 +56,36 @@ export class InvitationService {
       );
     }
 
-    // 3. Create the invitation
+    // 4. Create the invitation
     const invitation = await this.prisma.invitation.create({
       data: {
-        userId,
-        templateId: dto.templateId,
+        purchaseId: dto.purchaseId,
         slug: dto.slug,
+        eventTitle: dto.eventTitle,
+        eventLocation: dto.eventLocation,
         eventDate: new Date(dto.eventDate),
         locationUrl: dto.locationUrl,
         welcomeText: dto.welcomeText,
-        images: dto.images,
+        images: dto.images ?? [],
         musicUrl: dto.musicUrl,
       },
       include: {
-        template: {
-          select: {
-            id: true,
-            title: true,
-            thumbnailUrl: true,
+        purchase: {
+          include: {
+            template: {
+              select: {
+                id: true,
+                title: true,
+                previewImage: true,
+              },
+            },
           },
         },
       },
     });
 
-    return invitation;
+    // Adapt response structure to keep frontend/admin representations clean
+    return this.mapInvitationResponse(invitation);
   }
 
   // ──────────────────────────────────────────────
@@ -83,6 +100,9 @@ export class InvitationService {
     // 1. Find the invitation
     const invitation = await this.prisma.invitation.findUnique({
       where: { id: invitationId },
+      include: {
+        purchase: true,
+      },
     });
 
     if (!invitation) {
@@ -92,7 +112,7 @@ export class InvitationService {
     }
 
     // 2. Ensure the authenticated client owns this invitation
-    if (invitation.userId !== userId) {
+    if (invitation.purchase.userId !== userId) {
       throw new ForbiddenException(
         'You are not authorized to edit this invitation',
       );
@@ -109,14 +129,21 @@ export class InvitationService {
           `The slug "${dto.slug}" is already taken. Please choose a different one.`,
         );
       }
+
+      // Also update slug in purchase record if appropriate
+      await this.prisma.purchase.update({
+        where: { id: invitation.purchaseId },
+        data: { slug: dto.slug },
+      });
     }
 
     // 4. Build the update payload (only include provided fields)
-    const updateData: Record<string, unknown> = {};
+    const updateData: Record<string, any> = {};
 
     if (dto.slug !== undefined) updateData.slug = dto.slug;
-    if (dto.eventDate !== undefined)
-      updateData.eventDate = new Date(dto.eventDate);
+    if (dto.eventTitle !== undefined) updateData.eventTitle = dto.eventTitle;
+    if (dto.eventLocation !== undefined) updateData.eventLocation = dto.eventLocation;
+    if (dto.eventDate !== undefined) updateData.eventDate = new Date(dto.eventDate);
     if (dto.locationUrl !== undefined) updateData.locationUrl = dto.locationUrl;
     if (dto.welcomeText !== undefined) updateData.welcomeText = dto.welcomeText;
     if (dto.images !== undefined) updateData.images = dto.images;
@@ -127,17 +154,21 @@ export class InvitationService {
       where: { id: invitationId },
       data: updateData,
       include: {
-        template: {
-          select: {
-            id: true,
-            title: true,
-            thumbnailUrl: true,
+        purchase: {
+          include: {
+            template: {
+              select: {
+                id: true,
+                title: true,
+                previewImage: true,
+              },
+            },
           },
         },
       },
     });
 
-    return updatedInvitation;
+    return this.mapInvitationResponse(updatedInvitation);
   }
 
   // ──────────────────────────────────────────────
@@ -148,12 +179,16 @@ export class InvitationService {
     const invitation = await this.prisma.invitation.findUnique({
       where: { slug },
       include: {
-        template: {
-          select: {
-            id: true,
-            title: true,
-            thumbnailUrl: true,
-            demoLink: true,
+        purchase: {
+          include: {
+            template: {
+              select: {
+                id: true,
+                title: true,
+                previewImage: true,
+                demoLink: true,
+              },
+            },
           },
         },
       },
@@ -165,9 +200,7 @@ export class InvitationService {
       );
     }
 
-    // Strip internal fields before returning to the public
-    const { userId, ...publicData } = invitation;
-    return publicData;
+    return this.mapInvitationResponse(invitation);
   }
 
   // ──────────────────────────────────────────────
@@ -178,6 +211,9 @@ export class InvitationService {
     // 1. Find the invitation
     const invitation = await this.prisma.invitation.findUnique({
       where: { id: invitationId },
+      include: {
+        purchase: true,
+      },
     });
 
     if (!invitation) {
@@ -187,7 +223,7 @@ export class InvitationService {
     }
 
     // 2. Ensure the client owns this invitation
-    if (invitation.userId !== userId) {
+    if (invitation.purchase.userId !== userId) {
       throw new ForbiddenException(
         'You are not authorized to view RSVPs for this invitation',
       );
@@ -201,11 +237,11 @@ export class InvitationService {
 
     // 4. Compute statistics
     const totalResponses = rsvps.length;
-    const attending = rsvps.filter((r) => r.willAttend);
-    const excused = rsvps.filter((r) => !r.willAttend);
+    const attending = rsvps.filter((r) => r.attendance === RsvpAttendance.YES);
+    const excused = rsvps.filter((r) => r.attendance === RsvpAttendance.NO);
 
     const totalAttending = attending.reduce(
-      (sum, r) => sum + 1 + r.companionsCount,
+      (sum, r) => sum + 1 + r.guestsCount,
       0,
     );
     const totalExcused = excused.length;
@@ -217,11 +253,25 @@ export class InvitationService {
         totalAttending,
         totalExcused,
         totalCompanions: attending.reduce(
-          (sum, r) => sum + r.companionsCount,
+          (sum, r) => sum + r.guestsCount,
           0,
         ),
       },
       rsvps,
+    };
+  }
+
+  // ──────────────────────────────────────────────
+  // Helper: map database output to API response
+  // ──────────────────────────────────────────────
+
+  private mapInvitationResponse(invitation: any) {
+    const { purchase, ...invitationFields } = invitation;
+    return {
+      ...invitationFields,
+      userId: purchase?.userId,
+      templateId: purchase?.templateId,
+      template: purchase?.template,
     };
   }
 }

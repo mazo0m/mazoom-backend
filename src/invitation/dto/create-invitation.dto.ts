@@ -12,13 +12,13 @@ import {
 
 export class CreateInvitationDto {
   @ApiProperty({
-    description: 'UUID of the template to use for this invitation',
+    description: 'UUID of the template purchase to use for this invitation',
     example: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
     format: 'uuid',
   })
-  @IsUUID('4', { message: 'templateId must be a valid UUID' })
-  @IsNotEmpty({ message: 'Template ID is required' })
-  templateId: string;
+  @IsUUID('4', { message: 'purchaseId must be a valid UUID' })
+  @IsNotEmpty({ message: 'Purchase ID is required' })
+  purchaseId: string;
 
   @ApiProperty({
     description:
@@ -34,6 +34,22 @@ export class CreateInvitationDto {
   slug: string;
 
   @ApiProperty({
+    description: 'Title of the event or couple names',
+    example: 'حفل زفاف أحمد وسارة',
+  })
+  @IsString()
+  @IsNotEmpty({ message: 'Event title is required' })
+  eventTitle: string;
+
+  @ApiProperty({
+    description: 'Location of the event (venue name or description)',
+    example: 'قاعة الروابي - الرياض',
+  })
+  @IsString()
+  @IsNotEmpty({ message: 'Event location is required' })
+  eventLocation: string;
+
+  @ApiProperty({
     description: 'Event date and time in ISO 8601 format',
     example: '2025-09-15T18:00:00.000Z',
   })
@@ -41,23 +57,23 @@ export class CreateInvitationDto {
   @IsNotEmpty({ message: 'Event date is required' })
   eventDate: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Google Maps or venue URL for the event location',
     example: 'https://maps.google.com/?q=24.7136,46.6753',
   })
+  @IsOptional()
   @IsUrl({}, { message: 'locationUrl must be a valid URL' })
-  @IsNotEmpty({ message: 'Location URL is required' })
-  locationUrl: string;
+  locationUrl?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Welcome / greeting message displayed on the invitation',
     example: 'يسرنا دعوتكم لحضور حفل زفاف أحمد وسارة',
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'Welcome text is required' })
-  welcomeText: string;
+  welcomeText?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Array of image URLs to display in the invitation gallery',
     example: [
       'https://cdn.mazoom.app/img/photo1.jpg',
@@ -65,9 +81,10 @@ export class CreateInvitationDto {
     ],
     type: [String],
   })
+  @IsOptional()
   @IsArray({ message: 'images must be an array of URLs' })
   @IsUrl({}, { each: true, message: 'Each image must be a valid URL' })
-  images: string[];
+  images?: string[];
 
   @ApiPropertyOptional({
     description: 'Optional background music URL for the invitation page',

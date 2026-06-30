@@ -20,10 +20,15 @@ enum Role {
   CLIENT
 }
 
-enum OrderStatus {
+enum RequestStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum RsvpAttendance {
+  YES
+  NO
 }
 
 // ============================================================================
@@ -42,8 +47,8 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
 
   // Relations
-  orders      Order[]
-  invitations Invitation[]
+  purchaseRequests PurchaseRequest[]
+  purchases        Purchase[]
 
   @@map("users")
 }
@@ -51,72 +56,96 @@ model User {
 /// Invitation design templates managed by admins.
 /// Clients browse and select a template to build their invitation.
 model Template {
-  id           String   @id @default(uuid()) @db.Uuid
-  title        String
-  thumbnailUrl String   @map("thumbnail_url")
-  demoLink     String   @map("demo_link")
-  price        Decimal  @db.Decimal(10, 2)
-  isPremium    Boolean  @default(false) @map("is_premium")
-  createdAt    DateTime @default(now()) @map("created_at")
+  id             String   @id @default(uuid()) @db.Uuid
+  title          String
+  description    String   @db.Text
+  previewImage   String   @map("preview_image")
+  price          Decimal  @db.Decimal(10, 2)
+  editableFields Json     @map("editable_fields")
+  demoLink       String?  @map("demo_link")
+  isPremium      Boolean  @default(false) @map("is_premium")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   // Relations
-  orders      Order[]
-  invitations Invitation[]
+  purchaseRequests PurchaseRequest[]
+  purchases        Purchase[]
 
   @@map("templates")
 }
 
-/// Purchase / unlock orders — tracks when a client requests access
-/// to a premium template.
-model Order {
-  id         String      @id @default(uuid()) @db.Uuid
-  userId     String      @map("user_id") @db.Uuid
-  templateId String      @map("template_id") @db.Uuid
-  status     OrderStatus @default(PENDING)
-  createdAt  DateTime    @default(now()) @map("created_at")
+/// Purchase / unlock requests — tracks when a client requests access
+/// to a template.
+model PurchaseRequest {
+  id           String        @id @default(uuid()) @db.Uuid
+  userId       String        @map("user_id") @db.Uuid
+  templateId   String        @map("template_id") @db.Uuid
+  contactEmail String        @map("contact_email")
+  contactPhone String        @map("contact_phone")
+  status       RequestStatus @default(PENDING)
+  createdAt    DateTime      @default(now()) @map("created_at")
 
   // Relations
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template Template  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  purchase Purchase?
 
   @@index([userId])
   @@index([templateId])
-  @@map("orders")
+  @@map("purchase_requests")
 }
 
-/// A published digital invitation created by a client using a chosen template.
-/// The unique `slug` serves as the shareable URL path (e.g. /invite/ahmed-wedding).
-model Invitation {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @map("user_id") @db.Uuid
-  templateId  String   @map("template_id") @db.Uuid
-  slug        String   @unique
-  eventDate   DateTime @map("event_date")
-  locationUrl String   @map("location_url")
-  welcomeText String   @map("welcome_text") @db.Text
-  images      String[]
-  musicUrl    String?  @map("music_url")
-  createdAt   DateTime @default(now()) @map("created_at")
+/// A purchase record created when a PurchaseRequest is approved.
+model Purchase {
+  id                String          @id @default(uuid()) @db.Uuid
+  userId            String          @map("user_id") @db.Uuid
+  templateId        String          @map("template_id") @db.Uuid
+  purchaseRequestId String          @unique @map("purchase_request_id") @db.Uuid
+  slug              String          @unique
+  createdAt         DateTime        @default(now()) @map("created_at")
 
   // Relations
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  rsvps    RSVP[]
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template        Template        @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  purchaseRequest PurchaseRequest @relation(fields: [purchaseRequestId], references: [id], onDelete: Cascade)
+  invitation      Invitation?
 
   @@index([userId])
   @@index([templateId])
+  @@map("purchases")
+}
+
+/// A published digital invitation created by a client using a chosen template purchase.
+model Invitation {
+  id            String   @id @default(uuid()) @db.Uuid
+  purchaseId    String   @unique @map("purchase_id") @db.Uuid
+  slug          String   @unique
+  eventTitle    String   @map("event_title")
+  eventDate     DateTime @map("event_date")
+  eventLocation String   @map("event_location")
+  locationUrl   String?  @map("location_url")
+  welcomeText   String?  @db.Text @map("welcome_text")
+  images        String[]
+  musicUrl      String?  @map("music_url")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  rsvps    RSVP[]
+
+  @@index([purchaseId])
   @@index([slug])
   @@map("invitations")
 }
 
 /// Guest RSVP responses linked to a specific invitation.
 model RSVP {
-  id              String   @id @default(uuid()) @db.Uuid
-  invitationId    String   @map("invitation_id") @db.Uuid
-  guestName       String   @map("guest_name")
-  willAttend      Boolean  @map("will_attend")
-  companionsCount Int      @default(0) @map("companions_count")
-  createdAt       DateTime @default(now()) @map("created_at")
+  id           String         @id @default(uuid()) @db.Uuid
+  invitationId String         @map("invitation_id") @db.Uuid
+  name         String
+  attendance   RsvpAttendance
+  guestsCount  Int            @default(0) @map("guests_count")
+  message      String?        @db.Text
+  createdAt    DateTime       @default(now()) @map("created_at")
 
   // Relations
   invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)

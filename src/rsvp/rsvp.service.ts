@@ -26,9 +26,10 @@ export class RsvpService {
     const rsvp = await this.prisma.rSVP.create({
       data: {
         invitationId: dto.invitationId,
-        guestName: dto.guestName,
-        willAttend: dto.willAttend,
-        companionsCount: dto.companionsCount,
+        name: dto.name,
+        attendance: dto.attendance,
+        guestsCount: dto.guestsCount,
+        message: dto.message,
       },
     });
 
