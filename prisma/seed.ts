@@ -1,4 +1,4 @@
-import { PrismaClient, Role, RsvpAttendance } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
 import 'dotenv/config';
@@ -51,41 +51,62 @@ async function main() {
   console.log(`Created admin: ${admin.email}`);
   console.log(`Created client: ${client.email}`);
 
-  // 3. Create default Templates
-  console.log('Creating templates...');
-  const template1 = await prisma.template.create({
+  // 3. Create ONLY the Luxury Wedding Template
+  console.log('Creating template...');
+  const template = await prisma.template.create({
     data: {
       title: 'Royal Gold Wedding',
-      description: 'A luxurious gold-themed wedding invitation template with elegant animations.',
-      previewImage: 'https://cdn.mazoom.app/templates/royal-gold.jpg',
-      price: 149.99,
-      demoLink: 'https://demo.mazoom.app/royal-gold',
+      description: 'تصميم زفاف ذهبي فاخر مع مؤثرات تساقط الثلوج وموسيقى خلفية ونظام تأكيد حضور متكامل.',
+      previewImage: '/base44.app/api/apps/6966e1f30fa9fbe508239391/files/mp/public/6966e1f30fa9fbe508239391/941a523da_1000046659.png',
+      price: 150.00,
+      demoLink: '/invite/royal-gold-demo',
       isPremium: true,
       editableFields: {
-        eventTitle: { type: 'string', label: 'Event Title', default: 'حفل زفاف أحمد وسارة' },
+        eventTitle: { type: 'string', label: 'Event Title', default: 'أيمن & راما' },
         eventDate: { type: 'date', label: 'Event Date' },
-        eventLocation: { type: 'string', label: 'Event Location', default: 'قاعة الروابي - الرياض' },
+        eventLocation: { type: 'string', label: 'Event Location', default: 'قاعة السمو، الرياض' },
       },
     },
   });
 
-  const template2 = await prisma.template.create({
+  console.log(`Created template: "${template.title}"`);
+
+  // 4. Pre-create Approved Purchase Request, Purchase, and Invitation for Demo slug
+  console.log('Creating demo invitation mapping...');
+  const purchaseRequest = await prisma.purchaseRequest.create({
     data: {
-      title: 'Elegant Rose',
-      description: 'A romantic floral design perfect for weddings and anniversaries.',
-      previewImage: 'https://cdn.mazoom.app/templates/elegant-rose.jpg',
-      price: 99.99,
-      demoLink: 'https://demo.mazoom.app/elegant-rose',
-      isPremium: false,
-      editableFields: {
-        eventTitle: { type: 'string', label: 'Event Title', default: 'حفل زفاف خالد وفاطمة' },
-        eventDate: { type: 'date', label: 'Event Date' },
-        eventLocation: { type: 'string', label: 'Event Location', default: 'قاعة الأوركيد - جدة' },
-      },
+      userId: client.id,
+      templateId: template.id,
+      contactEmail: 'client@mazoom.app',
+      contactPhone: '+966500000002',
+      status: 'APPROVED',
     },
   });
 
-  console.log(`Created templates: "${template1.title}" and "${template2.title}"`);
+  const purchase = await prisma.purchase.create({
+    data: {
+      userId: client.id,
+      templateId: template.id,
+      purchaseRequestId: purchaseRequest.id,
+      slug: 'royal-gold-demo',
+    },
+  });
+
+  const invitation = await prisma.invitation.create({
+    data: {
+      purchaseId: purchase.id,
+      slug: 'royal-gold-demo',
+      eventTitle: 'أيمن & راما',
+      eventLocation: 'قاعة السمو، الرياض',
+      eventDate: new Date('2027-03-02T06:21:00.000Z'),
+      locationUrl: 'https://maps.google.com/?q=24.7136,46.6753',
+      welcomeText: 'بقلوبٍ يملؤها الفرح\nوبدعاءٍ صادق أن يتمّ الله لنا ولكم الخير\nنتشرف بدعوتكم لمشاركتنا\nفرحة أبنائنا\n\nفي يومٍ جمع الله فيه القلوب\nوكتب فيه بداية عمرٍ جديد\nوجودكم بيننا شرف\nومشاركتكم لنا تزيد الفرح فرحًا 🤍',
+      images: [],
+      musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    },
+  });
+
+  console.log(`Demo invitation successfully mapped! URL slug: "${invitation.slug}"`);
   console.log('Seed process completed successfully!');
 }
 
