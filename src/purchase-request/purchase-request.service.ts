@@ -27,7 +27,7 @@ export class PurchaseRequestService {
 
     if (!template) {
       throw new NotFoundException(
-        `Template with ID "${dto.templateId}" not found`,
+        `errors.template_not_found|${dto.templateId}`,
       );
     }
 
@@ -116,13 +116,13 @@ export class PurchaseRequestService {
     });
 
     if (!request) {
-      throw new NotFoundException(`Purchase request with ID "${id}" not found`);
+      throw new NotFoundException(`errors.purchase_request_not_found|${id}`);
     }
 
     // 2. Only PENDING requests can be transitioned
     if (request.status !== RequestStatus.PENDING) {
       throw new BadRequestException(
-        `Purchase request has already been ${request.status.toLowerCase()}. Only PENDING requests can be updated.`,
+        `errors.purchase_request_processed|${request.status.toLowerCase()}`,
       );
     }
 

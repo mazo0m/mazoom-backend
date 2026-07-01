@@ -18,7 +18,7 @@ export class RsvpService {
 
     if (!invitation) {
       throw new NotFoundException(
-        `Invitation with ID "${dto.invitationId}" not found`,
+        `errors.invitation_not_found|${dto.invitationId}`,
       );
     }
 
