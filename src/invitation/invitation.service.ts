@@ -28,21 +28,16 @@ export class InvitationService {
 
     if (!purchase) {
       throw new NotFoundException(
-        `Purchase with ID "${dto.purchaseId}" not found`,
+        `errors.purchase_not_found|${dto.purchaseId}`,
       );
     }
 
     if (purchase.userId !== userId) {
-      throw new ForbiddenException(
-        'You are not authorized to create an invitation for this purchase',
-      );
+      throw new ForbiddenException('errors.unauthorized_invitation');
     }
 
-    // 2. Ensure an invitation does not already exist for this purchase (1:1 relation)
     if (purchase.invitation) {
-      throw new BadRequestException(
-        'An invitation has already been generated for this purchase. Please update the existing invitation.',
-      );
+      throw new BadRequestException('errors.invitation_exists');
     }
 
     // 3. Check slug uniqueness
@@ -51,9 +46,7 @@ export class InvitationService {
     });
 
     if (existingSlug) {
-      throw new ConflictException(
-        `The slug "${dto.slug}" is already taken. Please choose a different one.`,
-      );
+      throw new ConflictException(`errors.slug_taken|${dto.slug}`);
     }
 
     // 4. Create the invitation
@@ -103,15 +96,13 @@ export class InvitationService {
 
     if (!invitation) {
       throw new NotFoundException(
-        `Invitation with ID "${invitationId}" not found`,
+        `errors.invitation_not_found|${invitationId}`,
       );
     }
 
     // 2. Ensure the authenticated client owns this invitation
     if (invitation.purchase.userId !== userId) {
-      throw new ForbiddenException(
-        'You are not authorized to edit this invitation',
-      );
+      throw new ForbiddenException('errors.unauthorized_edit');
     }
 
     // 3. If slug is being updated, check uniqueness
@@ -121,9 +112,7 @@ export class InvitationService {
       });
 
       if (existingSlug) {
-        throw new ConflictException(
-          `The slug "${dto.slug}" is already taken. Please choose a different one.`,
-        );
+        throw new ConflictException(`errors.slug_taken|${dto.slug}`);
       }
 
       // Also update slug in purchase record if appropriate
@@ -193,7 +182,7 @@ export class InvitationService {
     });
 
     if (!invitation) {
-      throw new NotFoundException(`Invitation with slug "${slug}" not found`);
+      throw new NotFoundException(`errors.invitation_slug_not_found|${slug}`);
     }
 
     return this.mapInvitationResponse(invitation);
@@ -214,15 +203,13 @@ export class InvitationService {
 
     if (!invitation) {
       throw new NotFoundException(
-        `Invitation with ID "${invitationId}" not found`,
+        `errors.invitation_not_found|${invitationId}`,
       );
     }
 
     // 2. Ensure the client owns this invitation
     if (invitation.purchase.userId !== userId) {
-      throw new ForbiddenException(
-        'You are not authorized to view RSVPs for this invitation',
-      );
+      throw new ForbiddenException('errors.unauthorized_rsvp');
     }
 
     // 3. Fetch all RSVPs

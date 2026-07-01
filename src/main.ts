@@ -2,9 +2,13 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Register global translation exception filter
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   // ── CORS ────────────────────────────────────────────────────────────
   // Allow the Next.js frontend (port 3001) to communicate with the API.

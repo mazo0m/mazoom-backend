@@ -29,7 +29,7 @@ export class AuthService {
     });
 
     if (existingEmail) {
-      throw new ConflictException('Email is already registered');
+      throw new ConflictException('errors.email_registered');
     }
 
     // 2. Check if phone number is already taken
@@ -38,7 +38,7 @@ export class AuthService {
     });
 
     if (existingPhone) {
-      throw new ConflictException('Phone number is already registered');
+      throw new ConflictException('errors.phone_registered');
     }
 
     // 3. Hash the password
@@ -70,7 +70,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('errors.invalid_credentials');
     }
 
     // 2. Compare password with stored hash
@@ -80,7 +80,7 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('errors.invalid_credentials');
     }
 
     // 3. Return JWT
