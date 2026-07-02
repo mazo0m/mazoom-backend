@@ -51,9 +51,9 @@ async function main() {
   console.log(`Created admin: ${admin.email}`);
   console.log(`Created client: ${client.email}`);
 
-  // 3. Create ONLY the Luxury Wedding Template
-  console.log('Creating template...');
-  const template = await prisma.template.create({
+  // 3. Create the templates
+  console.log('Creating templates...');
+  const template1 = await prisma.template.create({
     data: {
       title: 'Royal Gold Wedding',
       description: 'تصميم زفاف ذهبي فاخر مع مؤثرات تساقط الثلوج وموسيقى خلفية ونظام تأكيد حضور متكامل.',
@@ -69,32 +69,48 @@ async function main() {
     },
   });
 
-  console.log(`Created template: "${template.title}"`);
+  const template2 = await prisma.template.create({
+    data: {
+      title: 'Watercolor Garden Wedding',
+      description: 'تصميم زفاف ريفي ساحر مستوحى من الطبيعة مع خلفية فيديو للحديقة الغناء ونظام متكامل لتأكيد الحضور.',
+      previewImage: '/images/watercolor-garden-preview.png',
+      price: 150.00,
+      demoLink: '/invite/garden-demo',
+      isPremium: true,
+      editableFields: {
+        eventTitle: { type: 'string', label: 'Event Title', default: 'أحمد & سارة' },
+        eventDate: { type: 'date', label: 'Event Date' },
+        eventLocation: { type: 'string', label: 'Event Location', default: 'حديقة الياسمين، الرياض' },
+      },
+    },
+  });
 
-  // 4. Pre-create Approved Purchase Request, Purchase, and Invitation for Demo slug
-  console.log('Creating demo invitation mapping...');
-  const purchaseRequest = await prisma.purchaseRequest.create({
+  console.log(`Created templates: "${template1.title}" and "${template2.title}"`);
+
+  // 4. Pre-create Approved Purchase Request, Purchase, and Invitation for Demo slug (Royal Gold)
+  console.log('Creating demo invitation mapping for Royal Gold...');
+  const purchaseRequest1 = await prisma.purchaseRequest.create({
     data: {
       userId: client.id,
-      templateId: template.id,
+      templateId: template1.id,
       contactEmail: 'client@mazoom.app',
       contactPhone: '+966500000002',
       status: 'APPROVED',
     },
   });
 
-  const purchase = await prisma.purchase.create({
+  const purchase1 = await prisma.purchase.create({
     data: {
       userId: client.id,
-      templateId: template.id,
-      purchaseRequestId: purchaseRequest.id,
+      templateId: template1.id,
+      purchaseRequestId: purchaseRequest1.id,
       slug: 'royal-gold-demo',
     },
   });
 
-  const invitation = await prisma.invitation.create({
+  const invitation1 = await prisma.invitation.create({
     data: {
-      purchaseId: purchase.id,
+      purchaseId: purchase1.id,
       slug: 'royal-gold-demo',
       eventTitle: 'العريس & العروس',
       eventLocation: 'قاعة السمو، الرياض',
@@ -106,7 +122,44 @@ async function main() {
     },
   });
 
-  console.log(`Demo invitation successfully mapped! URL slug: "${invitation.slug}"`);
+  console.log(`Demo invitation successfully mapped! URL slug: "${invitation1.slug}"`);
+
+  // 5. Pre-create Approved Purchase Request, Purchase, and Invitation for Demo slug (Watercolor Garden)
+  console.log('Creating demo invitation mapping for Watercolor Garden...');
+  const purchaseRequest2 = await prisma.purchaseRequest.create({
+    data: {
+      userId: client.id,
+      templateId: template2.id,
+      contactEmail: 'client@mazoom.app',
+      contactPhone: '+966500000002',
+      status: 'APPROVED',
+    },
+  });
+
+  const purchase2 = await prisma.purchase.create({
+    data: {
+      userId: client.id,
+      templateId: template2.id,
+      purchaseRequestId: purchaseRequest2.id,
+      slug: 'garden-demo',
+    },
+  });
+
+  const invitation2 = await prisma.invitation.create({
+    data: {
+      purchaseId: purchase2.id,
+      slug: 'garden-demo',
+      eventTitle: 'أحمد & سارة',
+      eventLocation: 'حديقة الياسمين، الرياض',
+      eventDate: new Date('2027-05-15T18:00:00.000Z'),
+      locationUrl: 'https://maps.google.com/?q=24.7136,46.6753',
+      welcomeText: 'بقلوبٍ يملؤها الفرح والسرور،\nنتشرف بدعوتكم لمشاركتنا فرحة العمر\nوتوثيق عهد الحب والوفاء\n\nفي حفل زفاف أبنائنا\n\nحضوركم يسعدنا ويضفي على ليلتنا بهجة وسروراً 🌿',
+      images: [],
+      musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+    },
+  });
+
+  console.log(`Demo invitation successfully mapped! URL slug: "${invitation2.slug}"`);
   console.log('Seed process completed successfully!');
 }
 
