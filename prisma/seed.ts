@@ -62,7 +62,7 @@ async function main() {
       demoLink: '/invite/royal-gold-demo',
       isPremium: true,
       editableFields: {
-        eventTitle: { type: 'string', label: 'Event Title', default: 'أيمن & راما' },
+        eventTitle: { type: 'string', label: 'Event Title', default: 'العريس & العروس' },
         eventDate: { type: 'date', label: 'Event Date' },
         eventLocation: { type: 'string', label: 'Event Location', default: 'قاعة السمو، الرياض' },
       },
@@ -96,7 +96,7 @@ async function main() {
     data: {
       purchaseId: purchase.id,
       slug: 'royal-gold-demo',
-      eventTitle: 'أيمن & راما',
+      eventTitle: 'العريس & العروس',
       eventLocation: 'قاعة السمو، الرياض',
       eventDate: new Date('2027-03-02T06:21:00.000Z'),
       locationUrl: 'https://maps.google.com/?q=24.7136,46.6753',
