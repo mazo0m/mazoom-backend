@@ -100,6 +100,17 @@ export class PurchaseRequestService {
             price: true,
           },
         },
+        purchase: {
+          include: {
+            invitation: {
+              select: {
+                id: true,
+                slug: true,
+                isActive: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });

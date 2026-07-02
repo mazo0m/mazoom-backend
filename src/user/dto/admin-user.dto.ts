@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import {
+  IsBoolean,
   IsEmail,
   IsEnum,
   IsNotEmpty,
@@ -69,6 +70,14 @@ export class CreateUserDto {
   @IsEnum(Role, { message: 'Role must be either ADMIN or CLIENT' })
   @IsNotEmpty({ message: 'Role is required' })
   role: Role;
+
+  @ApiPropertyOptional({
+    description: 'Active status of the user',
+    example: true,
+  })
+  @IsBoolean({ message: 'isActive must be a boolean value' })
+  @IsOptional()
+  isActive?: boolean;
 }
 
 export class UpdateUserByAdminDto {
@@ -129,4 +138,12 @@ export class UpdateUserByAdminDto {
   @IsEnum(Role, { message: 'Role must be either ADMIN or CLIENT' })
   @IsOptional()
   role?: Role;
+
+  @ApiPropertyOptional({
+    description: 'Active status of the user',
+    example: true,
+  })
+  @IsBoolean({ message: 'isActive must be a boolean value' })
+  @IsOptional()
+  isActive?: boolean;
 }

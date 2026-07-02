@@ -2,12 +2,15 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   Param,
   ParseUUIDPipe,
+  Patch,
   Put,
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -24,7 +27,10 @@ import { CreateInvitationDto, UpdateInvitationDto } from './dto';
 @ApiTags('Invitations')
 @Controller('invitations')
 export class InvitationController {
-  constructor(private readonly invitationService: InvitationService) {}
+  constructor(
+    private readonly invitationService: InvitationService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   /**
    * POST /invitations
@@ -182,8 +188,21 @@ export class InvitationController {
     },
   })
   @ApiResponse({ status: 404, description: 'Invitation not found' })
-  findBySlug(@Param('slug') slug: string) {
-    return this.invitationService.findBySlug(slug);
+  async findBySlug(
+    @Param('slug') slug: string,
+    @Headers('authorization') authHeader?: string,
+  ) {
+    let userId: string | undefined;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.split(' ')[1];
+        const payload: any = this.jwtService.decode(token);
+        if (payload && payload.sub) {
+          userId = payload.sub;
+        }
+      } catch {}
+    }
+    return this.invitationService.findBySlug(slug, userId);
   }
 
   /**
@@ -245,5 +264,26 @@ export class InvitationController {
     @GetUser('id') userId: string,
   ) {
     return this.invitationService.findRsvps(id, userId);
+  }
+
+  /**
+   * PATCH /invitations/:id/status
+   * Toggles invitation activation status. Admin only.
+   */
+  @Patch(':id/status')
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Toggle invitation activation status (Admin)',
+    description:
+      'Allows admins to activate/deactivate a user invitation. Requires ADMIN role.',
+  })
+  @ApiResponse({ status: 200, description: 'Invitation status toggled successfully' })
+  toggleStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { isActive: boolean },
+  ) {
+    return this.invitationService.toggleStatus(id, body.isActive);
   }
 }

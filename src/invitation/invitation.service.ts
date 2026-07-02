@@ -135,6 +135,7 @@ export class InvitationService {
     if (dto.welcomeText !== undefined) updateData.welcomeText = dto.welcomeText;
     if (dto.images !== undefined) updateData.images = dto.images;
     if (dto.musicUrl !== undefined) updateData.musicUrl = dto.musicUrl;
+    if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
     // 5. Update
     const updatedInvitation = await this.prisma.invitation.update({
@@ -162,7 +163,7 @@ export class InvitationService {
   // Get invitation by slug (Public)
   // ──────────────────────────────────────────────
 
-  async findBySlug(slug: string) {
+  async findBySlug(slug: string, userId?: string) {
     const invitation = await this.prisma.invitation.findUnique({
       where: { slug },
       include: {
@@ -185,7 +186,45 @@ export class InvitationService {
       throw new NotFoundException(`errors.invitation_slug_not_found|${slug}`);
     }
 
+    // Check if invitation is deactivated
+    if (!invitation.isActive) {
+      let isOwnerOrAdmin = false;
+      if (userId) {
+        if (userId === invitation.purchase.userId) {
+          isOwnerOrAdmin = true;
+        } else {
+          const caller = await this.prisma.user.findUnique({ where: { id: userId } });
+          if (caller?.role === 'ADMIN') {
+            isOwnerOrAdmin = true;
+          }
+        }
+      }
+
+      if (!isOwnerOrAdmin) {
+        throw new ForbiddenException('errors.invitation_deactivated');
+      }
+    }
+
     return this.mapInvitationResponse(invitation);
+  }
+
+  // ──────────────────────────────────────────────
+  // Toggle activation status (Admin only)
+  // ──────────────────────────────────────────────
+
+  async toggleStatus(id: string, isActive: boolean) {
+    const invitation = await this.prisma.invitation.findUnique({
+      where: { id },
+    });
+
+    if (!invitation) {
+      throw new NotFoundException(`errors.invitation_not_found|${id}`);
+    }
+
+    return this.prisma.invitation.update({
+      where: { id },
+      data: { isActive },
+    });
   }
 
   // ──────────────────────────────────────────────

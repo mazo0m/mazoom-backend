@@ -83,7 +83,12 @@ export class AuthService {
       throw new UnauthorizedException('errors.invalid_credentials');
     }
 
-    // 3. Return JWT
+    // 3. Check if user is active
+    if (!user.isActive) {
+      throw new UnauthorizedException('errors.user_deactivated');
+    }
+
+    // 4. Return JWT
     return this.buildTokenResponse(user);
   }
 

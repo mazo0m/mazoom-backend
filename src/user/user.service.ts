@@ -134,6 +134,7 @@ export class UserService {
         lastName: dto.lastName,
         phoneNumber: dto.phoneNumber,
         role: dto.role,
+        isActive: dto.isActive !== undefined ? dto.isActive : true,
       },
     });
 
@@ -157,6 +158,7 @@ export class UserService {
     if (dto.firstName !== undefined) updateData.firstName = dto.firstName;
     if (dto.lastName !== undefined) updateData.lastName = dto.lastName;
     if (dto.role !== undefined) updateData.role = dto.role;
+    if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
     if (dto.email && dto.email !== user.email) {
       const existingEmail = await this.prisma.user.findUnique({

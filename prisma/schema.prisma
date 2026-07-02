@@ -44,6 +44,7 @@ model User {
   lastName     String   @map("last_name")
   phoneNumber  String   @unique @map("phone_number")
   role         Role     @default(CLIENT)
+  isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at")
 
   // Relations
@@ -64,6 +65,7 @@ model Template {
   editableFields Json     @map("editable_fields")
   demoLink       String?  @map("demo_link")
   isPremium      Boolean  @default(false) @map("is_premium")
+  isActive       Boolean  @default(true) @map("is_active")
   createdAt      DateTime @default(now()) @map("created_at")
 
   // Relations
@@ -126,6 +128,7 @@ model Invitation {
   welcomeText   String?  @db.Text @map("welcome_text")
   images        String[]
   musicUrl      String?  @map("music_url")
+  isActive      Boolean  @default(true) @map("is_active")
   createdAt     DateTime @default(now()) @map("created_at")
 
   // Relations

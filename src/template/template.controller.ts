@@ -5,6 +5,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -18,7 +19,7 @@ import { Role } from '@prisma/client';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
 import { Roles } from '../auth/decorators';
 import { TemplateService } from './template.service';
-import { CreateTemplateDto } from './dto';
+import { CreateTemplateDto, UpdateTemplateDto } from './dto';
 
 @ApiTags('Templates')
 @Controller('templates')
@@ -173,5 +174,26 @@ export class TemplateController {
   })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.templateService.findOne(id);
+  }
+
+  /**
+   * PUT /templates/:id
+   * Updates an existing invitation template or changes its status. Admin only.
+   */
+  @Put(':id')
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Update a template (Admin)',
+    description:
+      'Updates details or toggles activation status of an existing template. Requires ADMIN role.',
+  })
+  @ApiResponse({ status: 200, description: 'Template updated successfully' })
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateTemplateDto,
+  ) {
+    return this.templateService.update(id, dto);
   }
 }
