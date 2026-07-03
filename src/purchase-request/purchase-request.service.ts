@@ -178,4 +178,33 @@ export class PurchaseRequestService {
       return updatedRequest;
     });
   }
+
+  // ──────────────────────────────────────────────
+  // Cancel Purchase Request (Client only)
+  // ──────────────────────────────────────────────
+
+  async cancel(userId: string, userRole: string, id: string) {
+    const request = await this.prisma.purchaseRequest.findUnique({
+      where: { id },
+    });
+
+    if (!request) {
+      throw new NotFoundException(`errors.purchase_request_not_found|${id}`);
+    }
+
+    if (request.userId !== userId && userRole !== 'ADMIN') {
+      throw new BadRequestException('errors.unauthorized_request');
+    }
+
+    if (request.status !== RequestStatus.PENDING) {
+      throw new BadRequestException(
+        `errors.purchase_request_processed|${request.status.toLowerCase()}`,
+      );
+    }
+
+    return this.prisma.purchaseRequest.update({
+      where: { id },
+      data: { status: RequestStatus.CANCELLED },
+    });
+  }
 }
