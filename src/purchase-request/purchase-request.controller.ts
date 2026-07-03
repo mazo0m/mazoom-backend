@@ -168,10 +168,7 @@ export class PurchaseRequestController {
     description: 'Unauthorized — missing or invalid JWT',
   })
   @ApiResponse({ status: 404, description: 'Purchase request not found' })
-  cancel(
-    @GetUser() user: any,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
+  cancel(@GetUser() user: any, @Param('id', ParseUUIDPipe) id: string) {
     return this.purchaseRequestService.cancel(user.id, user.role, id);
   }
 }

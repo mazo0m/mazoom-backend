@@ -108,13 +108,67 @@ export class CreateInvitationDto {
 
   @ApiPropertyOptional({
     description: 'Array of event detail / guideline items',
-    example: [
-      { text: 'الدخول عبر رمز QR فقط' },
-      { text: 'يرجى تأكيد الحضور' },
-    ],
+    example: [{ text: 'الدخول عبر رمز QR فقط' }, { text: 'يرجى تأكيد الحضور' }],
     type: 'array',
   })
   @IsOptional()
   @IsArray({ message: 'eventDetails must be an array' })
   eventDetails?: { text: string }[];
+
+  @ApiPropertyOptional({
+    description: 'The language configuration chosen by the client',
+    example: 'both',
+    default: 'both',
+  })
+  @IsString()
+  @IsOptional()
+  languageMode?: string;
+
+  @ApiPropertyOptional({
+    description: 'Arabic event title / couple names',
+    example: 'أحمد & سارة',
+  })
+  @IsString()
+  @IsOptional()
+  eventTitleAr?: string;
+
+  @ApiPropertyOptional({
+    description: 'English event title / couple names',
+    example: 'Ahmed & Sarah',
+  })
+  @IsString()
+  @IsOptional()
+  eventTitleEn?: string;
+
+  @ApiPropertyOptional({
+    description: 'Arabic location hall name',
+    example: 'قاعة السمو، الرياض',
+  })
+  @IsString()
+  @IsOptional()
+  eventLocationAr?: string;
+
+  @ApiPropertyOptional({
+    description: 'English location hall name',
+    example: 'Royal Hall, Riyadh',
+  })
+  @IsString()
+  @IsOptional()
+  eventLocationEn?: string;
+
+  @ApiPropertyOptional({
+    description: 'Arabic welcome message text',
+    example: 'يسرنا دعوتكم لمشاركتنا...',
+  })
+  @IsString()
+  @IsOptional()
+  welcomeTextAr?: string;
+
+  @ApiPropertyOptional({
+    description: 'English welcome message text',
+    example: 'We are delighted to invite you...',
+  })
+  @IsString()
+  @IsOptional()
+  welcomeTextEn?: string;
 }

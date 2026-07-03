@@ -38,6 +38,7 @@ export class PurchaseRequestService {
         templateId: dto.templateId,
         contactEmail: dto.contactEmail,
         contactPhone: dto.contactPhone,
+        languageMode: dto.languageMode || 'both',
         status: RequestStatus.PENDING,
       },
       include: {
@@ -171,6 +172,7 @@ export class PurchaseRequestService {
             templateId: request.templateId,
             purchaseRequestId: request.id,
             slug,
+            languageMode: request.languageMode,
           },
         });
       }

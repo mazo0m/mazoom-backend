@@ -58,7 +58,8 @@ export class CreateUserDto {
   @IsString()
   @IsNotEmpty({ message: 'Phone number is required' })
   @Matches(/^\+?[1-9]\d{7,14}$/, {
-    message: 'Phone number must be a valid international format (e.g. +966501234567)',
+    message:
+      'Phone number must be a valid international format (e.g. +966501234567)',
   })
   phoneNumber: string;
 
@@ -126,7 +127,8 @@ export class UpdateUserByAdminDto {
   @IsString()
   @IsOptional()
   @Matches(/^\+?[1-9]\d{7,14}$/, {
-    message: 'Phone number must be a valid international format (e.g. +966501234567)',
+    message:
+      'Phone number must be a valid international format (e.g. +966501234567)',
   })
   phoneNumber?: string;
 

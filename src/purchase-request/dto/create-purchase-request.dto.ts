@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 export class CreatePurchaseRequestDto {
   @ApiProperty({
@@ -26,4 +32,13 @@ export class CreatePurchaseRequestDto {
   @IsString()
   @IsNotEmpty({ message: 'Contact phone is required' })
   contactPhone: string;
+
+  @ApiProperty({
+    description: 'The language mode chosen by the client',
+    example: 'both',
+    default: 'both',
+  })
+  @IsString()
+  @IsOptional()
+  languageMode?: string;
 }

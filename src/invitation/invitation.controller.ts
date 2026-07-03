@@ -279,7 +279,10 @@ export class InvitationController {
     description:
       'Allows admins to activate/deactivate a user invitation. Requires ADMIN role.',
   })
-  @ApiResponse({ status: 200, description: 'Invitation status toggled successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Invitation status toggled successfully',
+  })
   toggleStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: { isActive: boolean },

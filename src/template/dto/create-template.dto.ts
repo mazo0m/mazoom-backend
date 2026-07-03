@@ -19,6 +19,22 @@ export class CreateTemplateDto {
   @IsNotEmpty({ message: 'Template title is required' })
   title: string;
 
+  @ApiPropertyOptional({
+    description: 'Display title in Arabic',
+    example: 'حفل الزفاف الذهبي الملكي',
+  })
+  @IsString()
+  @IsOptional()
+  titleAr?: string;
+
+  @ApiPropertyOptional({
+    description: 'Display title in English',
+    example: 'Royal Gold Wedding',
+  })
+  @IsString()
+  @IsOptional()
+  titleEn?: string;
+
   @ApiProperty({
     description: 'Detailed description of the invitation template',
     example:
@@ -27,6 +43,22 @@ export class CreateTemplateDto {
   @IsString()
   @IsNotEmpty({ message: 'Description is required' })
   description: string;
+
+  @ApiPropertyOptional({
+    description: 'Detailed description in Arabic',
+    example: 'زفاف ملكي فاخر باللون الذهبي',
+  })
+  @IsString()
+  @IsOptional()
+  descriptionAr?: string;
+
+  @ApiPropertyOptional({
+    description: 'Detailed description in English',
+    example: 'A luxurious gold-themed wedding invitation',
+  })
+  @IsString()
+  @IsOptional()
+  descriptionEn?: string;
 
   @ApiProperty({
     description: 'Name or URL of the template preview image',

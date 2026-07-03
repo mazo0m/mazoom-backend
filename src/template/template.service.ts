@@ -14,7 +14,11 @@ export class TemplateService {
     const template = await this.prisma.template.create({
       data: {
         title: dto.title,
+        titleAr: dto.titleAr,
+        titleEn: dto.titleEn,
         description: dto.description,
+        descriptionAr: dto.descriptionAr,
+        descriptionEn: dto.descriptionEn,
         previewImage: dto.previewImage,
         price: dto.price,
         editableFields: dto.editableFields,
@@ -70,7 +74,11 @@ export class TemplateService {
       where: { id },
       data: {
         title: dto.title,
+        titleAr: dto.titleAr,
+        titleEn: dto.titleEn,
         description: dto.description,
+        descriptionAr: dto.descriptionAr,
+        descriptionEn: dto.descriptionEn,
         previewImage: dto.previewImage,
         price: dto.price,
         editableFields: dto.editableFields,

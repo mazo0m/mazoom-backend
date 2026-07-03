@@ -54,11 +54,18 @@ export class InvitationService {
       data: {
         purchaseId: dto.purchaseId,
         slug: dto.slug,
+        languageMode: dto.languageMode ?? purchase.languageMode,
         eventTitle: dto.eventTitle,
+        eventTitleAr: dto.eventTitleAr,
+        eventTitleEn: dto.eventTitleEn,
         eventLocation: dto.eventLocation,
+        eventLocationAr: dto.eventLocationAr,
+        eventLocationEn: dto.eventLocationEn,
         eventDate: new Date(dto.eventDate),
         locationUrl: dto.locationUrl,
         welcomeText: dto.welcomeText,
+        welcomeTextAr: dto.welcomeTextAr,
+        welcomeTextEn: dto.welcomeTextEn,
         images: dto.images ?? [],
         musicUrl: dto.musicUrl,
         eventProgram: dto.eventProgram ?? [],
@@ -128,17 +135,33 @@ export class InvitationService {
     const updateData: Record<string, any> = {};
 
     if (dto.slug !== undefined) updateData.slug = dto.slug;
+    if (dto.languageMode !== undefined)
+      updateData.languageMode = dto.languageMode;
     if (dto.eventTitle !== undefined) updateData.eventTitle = dto.eventTitle;
+    if (dto.eventTitleAr !== undefined)
+      updateData.eventTitleAr = dto.eventTitleAr;
+    if (dto.eventTitleEn !== undefined)
+      updateData.eventTitleEn = dto.eventTitleEn;
     if (dto.eventLocation !== undefined)
       updateData.eventLocation = dto.eventLocation;
+    if (dto.eventLocationAr !== undefined)
+      updateData.eventLocationAr = dto.eventLocationAr;
+    if (dto.eventLocationEn !== undefined)
+      updateData.eventLocationEn = dto.eventLocationEn;
     if (dto.eventDate !== undefined)
       updateData.eventDate = new Date(dto.eventDate);
     if (dto.locationUrl !== undefined) updateData.locationUrl = dto.locationUrl;
     if (dto.welcomeText !== undefined) updateData.welcomeText = dto.welcomeText;
+    if (dto.welcomeTextAr !== undefined)
+      updateData.welcomeTextAr = dto.welcomeTextAr;
+    if (dto.welcomeTextEn !== undefined)
+      updateData.welcomeTextEn = dto.welcomeTextEn;
     if (dto.images !== undefined) updateData.images = dto.images;
     if (dto.musicUrl !== undefined) updateData.musicUrl = dto.musicUrl;
-    if (dto.eventProgram !== undefined) updateData.eventProgram = dto.eventProgram;
-    if (dto.eventDetails !== undefined) updateData.eventDetails = dto.eventDetails;
+    if (dto.eventProgram !== undefined)
+      updateData.eventProgram = dto.eventProgram;
+    if (dto.eventDetails !== undefined)
+      updateData.eventDetails = dto.eventDetails;
     if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
     // 5. Update
@@ -197,7 +220,9 @@ export class InvitationService {
         if (userId === invitation.purchase.userId) {
           isOwnerOrAdmin = true;
         } else {
-          const caller = await this.prisma.user.findUnique({ where: { id: userId } });
+          const caller = await this.prisma.user.findUnique({
+            where: { id: userId },
+          });
           if (caller?.role === 'ADMIN') {
             isOwnerOrAdmin = true;
           }

@@ -61,6 +61,10 @@ model Template {
   id             String   @id @default(uuid()) @db.Uuid
   title          String
   description    String   @db.Text
+  titleAr        String?  @map("title_ar")
+  titleEn        String?  @map("title_en")
+  descriptionAr  String?  @db.Text @map("description_ar")
+  descriptionEn  String?  @db.Text @map("description_en")
   previewImage   String   @map("preview_image")
   price          Decimal  @db.Decimal(10, 2)
   editableFields Json     @map("editable_fields")
@@ -84,6 +88,7 @@ model PurchaseRequest {
   templateId   String        @map("template_id") @db.Uuid
   contactEmail String        @map("contact_email")
   contactPhone String        @map("contact_phone")
+  languageMode String        @default("both") @map("language_mode")
   status       RequestStatus @default(PENDING)
   createdAt    DateTime      @default(now()) @map("created_at")
 
@@ -104,6 +109,7 @@ model Purchase {
   templateId        String          @map("template_id") @db.Uuid
   purchaseRequestId String          @unique @map("purchase_request_id") @db.Uuid
   slug              String          @unique
+  languageMode      String          @default("both") @map("language_mode")
   createdAt         DateTime        @default(now()) @map("created_at")
 
   // Relations
@@ -119,20 +125,27 @@ model Purchase {
 
 /// A published digital invitation created by a client using a chosen template purchase.
 model Invitation {
-  id            String   @id @default(uuid()) @db.Uuid
-  purchaseId    String   @unique @map("purchase_id") @db.Uuid
-  slug          String   @unique
-  eventTitle    String   @map("event_title")
-  eventDate     DateTime @map("event_date")
-  eventLocation String   @map("event_location")
-  locationUrl   String?  @map("location_url")
-  welcomeText   String?  @db.Text @map("welcome_text")
-  images        String[]
-  musicUrl      String?  @map("music_url")
-  eventProgram  Json[]   @default([]) @map("event_program")
-  eventDetails  Json[]   @default([]) @map("event_details")
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at")
+  id              String   @id @default(uuid()) @db.Uuid
+  purchaseId      String   @unique @map("purchase_id") @db.Uuid
+  slug            String   @unique
+  languageMode    String   @default("both") @map("language_mode")
+  eventTitle      String   @map("event_title")
+  eventTitleAr    String?  @map("event_title_ar")
+  eventTitleEn    String?  @map("event_title_en")
+  eventDate       DateTime @map("event_date")
+  eventLocation   String   @map("event_location")
+  eventLocationAr String?  @map("event_location_ar")
+  eventLocationEn String?  @map("event_location_en")
+  locationUrl     String?  @map("location_url")
+  welcomeText     String?  @db.Text @map("welcome_text")
+  welcomeTextAr   String?  @db.Text @map("welcome_text_ar")
+  welcomeTextEn   String?  @db.Text @map("welcome_text_en")
+  images          String[]
+  musicUrl        String?  @map("music_url")
+  eventProgram    Json[]   @default([]) @map("event_program")
+  eventDetails    Json[]   @default([]) @map("event_details")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
 
   // Relations
   purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
