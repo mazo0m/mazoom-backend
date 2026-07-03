@@ -61,6 +61,8 @@ export class InvitationService {
         welcomeText: dto.welcomeText,
         images: dto.images ?? [],
         musicUrl: dto.musicUrl,
+        eventProgram: dto.eventProgram ?? [],
+        eventDetails: dto.eventDetails ?? [],
       },
       include: {
         purchase: {
@@ -135,6 +137,8 @@ export class InvitationService {
     if (dto.welcomeText !== undefined) updateData.welcomeText = dto.welcomeText;
     if (dto.images !== undefined) updateData.images = dto.images;
     if (dto.musicUrl !== undefined) updateData.musicUrl = dto.musicUrl;
+    if (dto.eventProgram !== undefined) updateData.eventProgram = dto.eventProgram;
+    if (dto.eventDetails !== undefined) updateData.eventDetails = dto.eventDetails;
     if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
     // 5. Update

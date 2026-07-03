@@ -128,6 +128,8 @@ model Invitation {
   welcomeText   String?  @db.Text @map("welcome_text")
   images        String[]
   musicUrl      String?  @map("music_url")
+  eventProgram  Json[]   @default([]) @map("event_program")
+  eventDetails  Json[]   @default([]) @map("event_details")
   isActive      Boolean  @default(true) @map("is_active")
   createdAt     DateTime @default(now()) @map("created_at")
 

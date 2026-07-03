@@ -93,4 +93,28 @@ export class CreateInvitationDto {
   @IsOptional()
   @IsUrl({}, { message: 'musicUrl must be a valid URL' })
   musicUrl?: string;
+
+  @ApiPropertyOptional({
+    description: 'Array of event program / timeline items',
+    example: [
+      { time: '8:00 م', title: 'الاستقبال' },
+      { time: '9:00 م', title: 'العشاء' },
+    ],
+    type: 'array',
+  })
+  @IsOptional()
+  @IsArray({ message: 'eventProgram must be an array' })
+  eventProgram?: { time: string; title: string }[];
+
+  @ApiPropertyOptional({
+    description: 'Array of event detail / guideline items',
+    example: [
+      { text: 'الدخول عبر رمز QR فقط' },
+      { text: 'يرجى تأكيد الحضور' },
+    ],
+    type: 'array',
+  })
+  @IsOptional()
+  @IsArray({ message: 'eventDetails must be an array' })
+  eventDetails?: { text: string }[];
 }
