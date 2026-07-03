@@ -28,10 +28,10 @@ export class UpdateTemplateDto {
   description?: string;
 
   @ApiPropertyOptional({
-    description: 'URL of the template preview image',
-    example: 'https://cdn.mazoom.app/templates/royal-gold.jpg',
+    description: 'Name or URL of the template preview image',
+    example: '/images/royal-gold.jpg',
   })
-  @IsUrl({}, { message: 'Preview image URL must be a valid URL' })
+  @IsString()
   @IsOptional()
   previewImage?: string;
 

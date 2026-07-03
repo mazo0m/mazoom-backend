@@ -29,11 +29,11 @@ export class CreateTemplateDto {
   description: string;
 
   @ApiProperty({
-    description: 'URL of the template preview image',
-    example: 'https://cdn.mazoom.app/templates/royal-gold.jpg',
+    description: 'Name or URL of the template preview image',
+    example: '/images/royal-gold.jpg',
   })
-  @IsUrl({}, { message: 'Preview image URL must be a valid URL' })
-  @IsNotEmpty({ message: 'Preview image URL is required' })
+  @IsString()
+  @IsNotEmpty({ message: 'Preview image name or URL is required' })
   previewImage: string;
 
   @ApiProperty({
