@@ -177,7 +177,8 @@ export class InvitationService {
       updateData.eventDetails = dto.eventDetails;
     if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
     if (dto.contactName !== undefined) updateData.contactName = dto.contactName;
-    if (dto.contactPhone !== undefined) updateData.contactPhone = dto.contactPhone;
+    if (dto.contactPhone !== undefined)
+      updateData.contactPhone = dto.contactPhone;
     if (dto.allowGuestUploads !== undefined)
       updateData.allowGuestUploads = dto.allowGuestUploads;
     if (dto.moments !== undefined) updateData.moments = dto.moments;
@@ -364,7 +365,9 @@ export class InvitationService {
     });
 
     if (!invitation) {
-      throw new NotFoundException(`errors.invitation_not_found|${invitationId}`);
+      throw new NotFoundException(
+        `errors.invitation_not_found|${invitationId}`,
+      );
     }
 
     // If guest uploads are disabled, only the owner can upload

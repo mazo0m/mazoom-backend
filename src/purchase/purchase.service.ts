@@ -42,6 +42,10 @@ export class PurchaseService {
             eventProgram: true,
             eventDetails: true,
             isActive: true,
+            contactName: true,
+            contactPhone: true,
+            allowGuestUploads: true,
+            moments: true,
           },
         },
       },
@@ -73,12 +77,7 @@ export class PurchaseService {
             price: true,
           },
         },
-        invitation: {
-          select: {
-            id: true,
-            slug: true,
-          },
-        },
+        invitation: true,
       },
       orderBy: { createdAt: 'desc' },
     });

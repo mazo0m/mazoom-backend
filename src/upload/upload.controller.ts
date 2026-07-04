@@ -24,12 +24,15 @@ export class UploadController {
           cb(null, uploadPath);
         },
         filename: (req, file, cb) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
           cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
         },
       }),
       fileFilter: (req, file, cb) => {
-        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp|mpeg|mp3|wav|ogg)$/)) {
+        if (
+          !file.mimetype.match(/\/(jpg|jpeg|png|gif|webp|mpeg|mp3|wav|ogg)$/)
+        ) {
           return cb(
             new BadRequestException('Only images and audio files are allowed!'),
             false,
