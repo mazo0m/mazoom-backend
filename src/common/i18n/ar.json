@@ -15,6 +15,7 @@
   "errors.purchase_request_not_found": "طلب الشراء بالمعرف \"{0}\" غير موجود",
   "errors.slug_taken": "الرابط \"{0}\" محجوز بالفعل. يرجى اختيار رابط آخر.",
   "errors.purchase_request_processed": "طلب الشراء بالفعل أصبح {0}. يمكن فقط تعديل الطلبات المعلقة.",
+  "errors.guest_uploads_disabled": "رفع الصور من قِبل الضيوف معطل لهذه الدعوة. يمكن لصاحب الدعوة فقط إضافة صور.",
   
   "Email is already registered": "البريد الإلكتروني مسجل بالفعل",
   "Phone number is already registered": "رقم الهاتف مسجل بالفعل",

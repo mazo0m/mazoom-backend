@@ -15,6 +15,7 @@
   "errors.purchase_request_not_found": "Purchase request with ID \"{0}\" not found",
   "errors.slug_taken": "The slug \"{0}\" is already taken. Please choose a different one.",
   "errors.purchase_request_processed": "Purchase request has already been {0}. Only PENDING requests can be updated.",
+  "errors.guest_uploads_disabled": "Guest uploads are disabled for this invitation. Only the host can add photos.",
 
   "Email is already registered": "Email is already registered",
   "Phone number is already registered": "Phone number is already registered",

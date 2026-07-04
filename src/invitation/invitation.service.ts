@@ -72,6 +72,10 @@ export class InvitationService {
         musicUrl: dto.musicUrl,
         eventProgram: dto.eventProgram ?? [],
         eventDetails: dto.eventDetails ?? [],
+        contactName: dto.contactName,
+        contactPhone: dto.contactPhone,
+        allowGuestUploads: dto.allowGuestUploads ?? true,
+        moments: dto.moments ?? [],
       },
       include: {
         purchase: {
@@ -96,7 +100,12 @@ export class InvitationService {
   // Update invitation (Client only — owner)
   // ──────────────────────────────────────────────
 
-  async update(invitationId: string, userId: string, dto: UpdateInvitationDto) {
+  async update(
+    invitationId: string,
+    userId: string,
+    userRole: string,
+    dto: UpdateInvitationDto,
+  ) {
     // 1. Find the invitation
     const invitation = await this.prisma.invitation.findUnique({
       where: { id: invitationId },
@@ -111,8 +120,8 @@ export class InvitationService {
       );
     }
 
-    // 2. Ensure the authenticated client owns this invitation
-    if (invitation.purchase.userId !== userId) {
+    // 2. Ensure the authenticated client owns this invitation OR is an ADMIN
+    if (invitation.purchase.userId !== userId && userRole !== 'ADMIN') {
       throw new ForbiddenException('errors.unauthorized_edit');
     }
 
@@ -167,6 +176,11 @@ export class InvitationService {
     if (dto.eventDetails !== undefined)
       updateData.eventDetails = dto.eventDetails;
     if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
+    if (dto.contactName !== undefined) updateData.contactName = dto.contactName;
+    if (dto.contactPhone !== undefined) updateData.contactPhone = dto.contactPhone;
+    if (dto.allowGuestUploads !== undefined)
+      updateData.allowGuestUploads = dto.allowGuestUploads;
+    if (dto.moments !== undefined) updateData.moments = dto.moments;
 
     // 5. Update
     const updatedInvitation = await this.prisma.invitation.update({
@@ -338,6 +352,55 @@ export class InvitationService {
   }
 
   // ──────────────────────────────────────────────
+  // Add a moment (public/guest photo capture)
+  // ──────────────────────────────────────────────
+
+  async addMoment(invitationId: string, url: string, userId?: string) {
+    const invitation = await this.prisma.invitation.findUnique({
+      where: { id: invitationId },
+      include: {
+        purchase: true,
+      },
+    });
+
+    if (!invitation) {
+      throw new NotFoundException(`errors.invitation_not_found|${invitationId}`);
+    }
+
+    // If guest uploads are disabled, only the owner can upload
+    if (!invitation.allowGuestUploads) {
+      if (!userId || invitation.purchase.userId !== userId) {
+        throw new ForbiddenException('errors.guest_uploads_disabled');
+      }
+    }
+
+    // Append URL to moments scalar list
+    const updated = await this.prisma.invitation.update({
+      where: { id: invitationId },
+      data: {
+        moments: {
+          push: url,
+        },
+      },
+      include: {
+        purchase: {
+          include: {
+            template: {
+              select: {
+                id: true,
+                title: true,
+                previewImage: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return this.mapInvitationResponse(updated);
+  }
+
+  // ──────────────────────────────────────────────
   // Helper: map database output to API response
   // ──────────────────────────────────────────────
 
@@ -348,6 +411,10 @@ export class InvitationService {
       userId: purchase?.userId,
       templateId: purchase?.templateId,
       template: purchase?.template,
+      contactName: invitationFields.contactName,
+      contactPhone: invitationFields.contactPhone,
+      allowGuestUploads: invitationFields.allowGuestUploads,
+      moments: invitationFields.moments,
     };
   }
 }

@@ -108,16 +108,16 @@ export class InvitationController {
 
   /**
    * PUT /invitations/:id
-   * Updates an existing invitation. Client only (must be the owner).
+   * Updates an existing invitation. Client (must be the owner) or Admin.
    */
   @Put(':id')
-  @Roles(Role.CLIENT)
+  @Roles(Role.CLIENT, Role.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Update an invitation',
     description:
-      'Updates an existing invitation. Only the invitation owner (client) can update it. ' +
+      'Updates an existing invitation. Only the invitation owner (client) or an admin can update it. ' +
       'The templateId cannot be changed.',
   })
   @ApiParam({
@@ -139,9 +139,42 @@ export class InvitationController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @GetUser('id') userId: string,
+    @GetUser('role') role: string,
     @Body() dto: UpdateInvitationDto,
   ) {
-    return this.invitationService.update(id, userId, dto);
+    return this.invitationService.update(id, userId, role, dto);
+  }
+
+  /**
+   * POST /invitations/:id/moments
+   * Adds a moment (photo link) to the invitation.
+   */
+  @Post(':id/moments')
+  @ApiOperation({
+    summary: 'Add a photo moment to the invitation',
+    description: 'Enables guests or hosts to add photos/moments.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID of the invitation',
+    example: 'e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b',
+  })
+  addMoment(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { url: string },
+    @Headers('authorization') authHeader?: string,
+  ) {
+    let userId: string | undefined;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.split(' ')[1];
+        const payload: any = this.jwtService.decode(token);
+        if (payload && payload.sub) {
+          userId = payload.sub;
+        }
+      } catch {}
+    }
+    return this.invitationService.addMoment(id, body.url, userId);
   }
 
   /**

@@ -10,6 +10,7 @@ import { PurchaseModule } from './purchase/purchase.module';
 import { InvitationModule } from './invitation/invitation.module';
 import { RsvpModule } from './rsvp/rsvp.module';
 import { UserModule } from './user/user.module';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { UserModule } from './user/user.module';
     InvitationModule,
     RsvpModule,
     UserModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],

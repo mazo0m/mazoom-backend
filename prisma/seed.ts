@@ -119,6 +119,10 @@ async function main() {
       welcomeText: 'بقلوبٍ يملؤها الفرح\nوبدعاءٍ صادق أن يتمّ الله لنا ولكم الخير\nنتشرف بدعوتكم لمشاركتنا\nفرحة أبنائنا\n\nفي يومٍ جمع الله فيه القلوب\nوكتب فيه بداية عمرٍ جديد\nوجودكم بيننا شرف\nمشاركتكم لنا تزيد الفرح فرحًا 🤍',
       images: [],
       musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+      contactName: 'أخو العريس',
+      contactPhone: '+966500000001',
+      allowGuestUploads: true,
+      moments: [],
     },
   });
 
@@ -156,6 +160,10 @@ async function main() {
       welcomeText: 'بقلوبٍ يملؤها الفرح والسرور،\nنتشرف بدعوتكم لمشاركتنا فرحة العمر\nوتوثيق عهد الحب والوفاء\n\nفي حفل زفاف أبنائنا\n\nحضوركم يسعدنا ويضفي على ليلتنا بهجة وسروراً 🌿',
       images: [],
       musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+      contactName: 'أخو العريس',
+      contactPhone: '+966500000001',
+      allowGuestUploads: true,
+      moments: [],
     },
   });
 

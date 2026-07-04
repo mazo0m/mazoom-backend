@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
+  IsBoolean,
   IsDateString,
   IsNotEmpty,
   IsOptional,
@@ -171,4 +172,38 @@ export class CreateInvitationDto {
   @IsString()
   @IsOptional()
   welcomeTextEn?: string;
+
+  @ApiPropertyOptional({
+    description: 'WhatsApp Contact Name',
+    example: 'أخو العريس',
+  })
+  @IsOptional()
+  @IsString()
+  contactName?: string;
+
+  @ApiPropertyOptional({
+    description: 'WhatsApp Contact Phone',
+    example: '+966500000000',
+  })
+  @IsOptional()
+  @IsString()
+  contactPhone?: string;
+
+  @ApiPropertyOptional({
+    description: 'Whether guests are allowed to upload moments/photos',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  allowGuestUploads?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Array of photo URLs/paths for moments',
+    example: ['/public/uploads/moment1.jpg'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  moments?: string[];
 }

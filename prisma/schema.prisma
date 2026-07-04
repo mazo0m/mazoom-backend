@@ -142,10 +142,14 @@ model Invitation {
   welcomeTextEn   String?  @db.Text @map("welcome_text_en")
   images          String[]
   musicUrl        String?  @map("music_url")
-  eventProgram    Json[]   @default([]) @map("event_program")
-  eventDetails    Json[]   @default([]) @map("event_details")
-  isActive        Boolean  @default(true) @map("is_active")
-  createdAt       DateTime @default(now()) @map("created_at")
+  eventProgram      Json[]   @default([]) @map("event_program")
+  eventDetails      Json[]   @default([]) @map("event_details")
+  contactName       String?  @map("contact_name")
+  contactPhone      String?  @map("contact_phone")
+  allowGuestUploads Boolean  @default(true) @map("allow_guest_uploads")
+  moments           String[] @default([])
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
 
   // Relations
   purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
