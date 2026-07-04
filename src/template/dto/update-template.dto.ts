@@ -92,7 +92,7 @@ export class UpdateTemplateDto {
     example: 'https://demo.mazoom.app/royal-gold',
   })
   @IsOptional()
-  @IsUrl({}, { message: 'Demo link must be a valid URL' })
+  @IsString({ message: 'Demo link must be a string' })
   demoLink?: string;
 
   @ApiPropertyOptional({

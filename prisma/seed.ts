@@ -91,17 +91,17 @@ async function main() {
   console.log('Creating demo invitation mapping for Royal Gold...');
   const purchaseRequest1 = await prisma.purchaseRequest.create({
     data: {
-      userId: client.id,
+      userId: admin.id,
       templateId: template1.id,
-      contactEmail: 'client@mazoom.app',
-      contactPhone: '+966500000002',
+      contactEmail: 'admin@mazoom.app',
+      contactPhone: '+966500000001',
       status: 'APPROVED',
     },
   });
 
   const purchase1 = await prisma.purchase.create({
     data: {
-      userId: client.id,
+      userId: admin.id,
       templateId: template1.id,
       purchaseRequestId: purchaseRequest1.id,
       slug: 'royal-gold-demo',
@@ -116,7 +116,7 @@ async function main() {
       eventLocation: 'قاعة السمو، الرياض',
       eventDate: new Date('2027-03-02T06:21:00.000Z'),
       locationUrl: 'https://maps.google.com/?q=24.7136,46.6753',
-      welcomeText: 'بقلوبٍ يملؤها الفرح\nوبدعاءٍ صادق أن يتمّ الله لنا ولكم الخير\nنتشرف بدعوتكم لمشاركتنا\nفرحة أبنائنا\n\nفي يومٍ جمع الله فيه القلوب\nوكتب فيه بداية عمرٍ جديد\nوجودكم بيننا شرف\nومشاركتكم لنا تزيد الفرح فرحًا 🤍',
+      welcomeText: 'بقلوبٍ يملؤها الفرح\nوبدعاءٍ صادق أن يتمّ الله لنا ولكم الخير\nنتشرف بدعوتكم لمشاركتنا\nفرحة أبنائنا\n\nفي يومٍ جمع الله فيه القلوب\nوكتب فيه بداية عمرٍ جديد\nوجودكم بيننا شرف\nمشاركتكم لنا تزيد الفرح فرحًا 🤍',
       images: [],
       musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
     },
@@ -128,17 +128,17 @@ async function main() {
   console.log('Creating demo invitation mapping for Watercolor Garden...');
   const purchaseRequest2 = await prisma.purchaseRequest.create({
     data: {
-      userId: client.id,
+      userId: admin.id,
       templateId: template2.id,
-      contactEmail: 'client@mazoom.app',
-      contactPhone: '+966500000002',
+      contactEmail: 'admin@mazoom.app',
+      contactPhone: '+966500000001',
       status: 'APPROVED',
     },
   });
 
   const purchase2 = await prisma.purchase.create({
     data: {
-      userId: client.id,
+      userId: admin.id,
       templateId: template2.id,
       purchaseRequestId: purchaseRequest2.id,
       slug: 'garden-demo',

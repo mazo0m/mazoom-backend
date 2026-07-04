@@ -45,7 +45,9 @@ export class InvitationService {
       where: { slug: dto.slug },
     });
 
-    if (existingSlug) {
+    const isReserved = await this.isSlugReserved(dto.slug);
+
+    if (existingSlug || isReserved) {
       throw new ConflictException(`errors.slug_taken|${dto.slug}`);
     }
 
@@ -120,7 +122,9 @@ export class InvitationService {
         where: { slug: dto.slug },
       });
 
-      if (existingSlug) {
+      const isReserved = await this.isSlugReserved(dto.slug);
+
+      if (existingSlug || isReserved) {
         throw new ConflictException(`errors.slug_taken|${dto.slug}`);
       }
 
@@ -307,6 +311,30 @@ export class InvitationService {
       },
       rsvps,
     };
+  }
+
+  // ──────────────────────────────────────────────
+  // Helper: check if slug is reserved for template demo
+  // ──────────────────────────────────────────────
+
+  private async isSlugReserved(slug: string): Promise<boolean> {
+    const templates = await this.prisma.template.findMany({
+      where: {
+        demoLink: {
+          not: null,
+        },
+      },
+      select: {
+        demoLink: true,
+      },
+    });
+
+    return templates.some((t) => {
+      if (!t.demoLink) return false;
+      const parts = t.demoLink.split('/');
+      const templateSlug = parts[parts.length - 1];
+      return templateSlug.toLowerCase() === slug.toLowerCase();
+    });
   }
 
   // ──────────────────────────────────────────────
