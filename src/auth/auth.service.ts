@@ -169,6 +169,100 @@ export class AuthService {
     return await this.buildTokenResponse(user);
   }
 
+  async refresh(refreshToken: string) {
+    if (!refreshToken) {
+      throw new UnauthorizedException('errors.invalid_refresh_token');
+    }
+
+    const tokenHash = this.hashToken(refreshToken);
+
+    const storedToken = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+      include: { user: true },
+    });
+
+    if (!storedToken) {
+      throw new UnauthorizedException('errors.invalid_refresh_token');
+    }
+
+    if (storedToken.isRevoked) {
+      await this.prisma.refreshToken.updateMany({
+        where: { userId: storedToken.userId },
+        data: { isRevoked: true },
+      });
+
+      throw new UnauthorizedException('errors.refresh_token_reused');
+    }
+
+    if (storedToken.expiresAt < new Date()) {
+      throw new UnauthorizedException('errors.refresh_token_expired');
+    }
+
+    if (!storedToken.user.isActive) {
+      throw new UnauthorizedException('errors.user_deactivated');
+    }
+
+    // generate new refresh token
+    const newRefreshToken = this.generateRefreshToken();
+    const newHash = this.hashToken(newRefreshToken);
+
+    const newToken = await this.prisma.refreshToken.create({
+      data: {
+        tokenHash: newHash,
+        userId: storedToken.userId,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    await this.prisma.refreshToken.update({
+      where: { id: storedToken.id },
+      data: {
+        isRevoked: true,
+        revokedAt: new Date(),
+        revokedReason: 'ROTATED',
+        replacedBy: newToken.id,
+      },
+    });
+
+    const payload: JwtPayload = {
+      sub: storedToken.user.id,
+      email: storedToken.user.email,
+      role: storedToken.user.role as JwtPayload['role'],
+    };
+
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: '15m',
+    });
+
+    return {
+      accessToken,
+      refreshToken: newRefreshToken,
+      user: {
+        id: storedToken.user.id,
+        email: storedToken.user.email,
+        role: storedToken.user.role,
+        firstName: storedToken.user.firstName,
+        lastName: storedToken.user.lastName,
+        phoneNumber: storedToken.user.phoneNumber,
+      },
+    };
+  }
+
+  async logout(refreshToken: string) {
+    if (!refreshToken) return;
+
+    const tokenHash = this.hashToken(refreshToken);
+
+    await this.prisma.refreshToken.updateMany({
+      where: { tokenHash },
+      data: {
+        isRevoked: true,
+        revokedAt: new Date(),
+        revokedReason: 'LOGOUT',
+      },
+    });
+  }
+
   // ──────────────────────────────────────────────
   // Helpers
   // ──────────────────────────────────────────────
@@ -195,28 +289,18 @@ export class AuthService {
       role: user.role as JwtPayload['role'],
     };
 
-    // Short-lived access token (15 minutes)
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
-
-    // Generate a long-lived refresh token (7 days)
-    const refreshToken = this.generateRefreshToken();
-    const tokenHash = this.hashToken(refreshToken);
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-    // Clean up expired tokens for this user to manage DB space
-    await this.prisma.refreshToken.deleteMany({
-      where: {
-        userId: user.id,
-        expiresAt: { lt: new Date() },
-      },
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: '15m',
     });
 
-    // Save refresh token to database
+    const refreshToken = this.generateRefreshToken();
+    const tokenHash = this.hashToken(refreshToken);
+
     await this.prisma.refreshToken.create({
       data: {
         tokenHash,
         userId: user.id,
-        expiresAt,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
     });
 
@@ -232,65 +316,5 @@ export class AuthService {
         phoneNumber: user.phoneNumber,
       },
     };
-  }
-
-  async refresh(refreshToken: string) {
-    if (!refreshToken) {
-      throw new UnauthorizedException('errors.invalid_refresh_token');
-    }
-
-    const tokenHash = this.hashToken(refreshToken);
-
-    const storedToken = await this.prisma.refreshToken.findUnique({
-      where: { tokenHash },
-      include: { user: true },
-    });
-
-    if (!storedToken) {
-      throw new UnauthorizedException('errors.invalid_refresh_token');
-    }
-
-    // Reuse detection
-    if (storedToken.isRevoked) {
-      // Invalidate all tokens for this user for security
-      await this.prisma.refreshToken.updateMany({
-        where: { userId: storedToken.userId },
-        data: { isRevoked: true },
-      });
-      throw new UnauthorizedException('errors.refresh_token_reused');
-    }
-
-    // Expiry check
-    if (storedToken.expiresAt < new Date()) {
-      throw new UnauthorizedException('errors.refresh_token_expired');
-    }
-
-    // User active check
-    if (!storedToken.user.isActive) {
-      throw new UnauthorizedException('errors.user_deactivated');
-    }
-
-    // Revoke old token as part of rotation
-    await this.prisma.refreshToken.update({
-      where: { id: storedToken.id },
-      data: { isRevoked: true },
-    });
-
-    // Issue new access and refresh tokens
-    return await this.buildTokenResponse(storedToken.user);
-  }
-
-  async logout(refreshToken: string) {
-    if (!refreshToken) return;
-
-    const tokenHash = this.hashToken(refreshToken);
-
-    try {
-      await this.prisma.refreshToken.delete({
-        where: { tokenHash },
-      });
-    } catch (e) {
-      // Ignore if already deleted/invalid
-    }
   }
 }
