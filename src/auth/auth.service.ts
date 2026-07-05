@@ -180,6 +180,13 @@ export class AuthService {
             isActive: true,
           },
         });
+
+        await this.auditLogService.log({
+          userId: user.id,
+          action: 'GOOGLE_SIGNUP',
+          ip,
+          userAgent,
+        });
       } else {
         // Check if user is active
         if (!user.isActive) {
@@ -218,16 +225,6 @@ export class AuthService {
     }
 
     if (storedToken.isRevoked) {
-      await this.prisma.refreshToken.updateMany({
-        where: { userId: storedToken.userId },
-        data: {
-          isRevoked: true,
-          revokedAt: new Date(),
-          revokedReason: RefreshTokenRevokeReason.ROTATED,
-        },
-      });
-
-      // Log token reuse detection
       await this.auditLogService.logRefreshTokenReuse(
         storedToken.userId,
         tokenHash,
@@ -311,8 +308,12 @@ export class AuthService {
       },
     });
 
-    if (storedToken) {
-      await this.auditLogService.logLogout(storedToken.userId, ip, userAgent);
+    if (storedToken?.userId) {
+      await this.auditLogService.logLogout(
+        storedToken.userId,
+        ip,
+        userAgent
+      );
     }
   }
 
@@ -355,6 +356,13 @@ export class AuthService {
         userId: user.id,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
+    });
+
+    await this.auditLogService.log({
+      userId: user.id,
+      action: 'REFRESH_TOKEN_CREATED',
+      ip: 'system',
+      userAgent: 'system',
     });
 
     return {
