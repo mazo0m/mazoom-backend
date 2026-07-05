@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto, LoginDto } from './dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
@@ -58,7 +59,7 @@ export class AuthService {
     });
 
     // 5. Return a JWT so the user is logged in immediately after registration
-    return this.buildTokenResponse(user);
+    return await this.buildTokenResponse(user);
   }
 
   // ──────────────────────────────────────────────
@@ -95,7 +96,7 @@ export class AuthService {
     }
 
     // 4. Return JWT
-    return this.buildTokenResponse(user);
+    return await this.buildTokenResponse(user);
   }
 
   // ──────────────────────────────────────────────
@@ -163,14 +164,22 @@ export class AuthService {
     }
 
     // 4. Return JWT
-    return this.buildTokenResponse(user);
+    return await this.buildTokenResponse(user);
   }
 
   // ──────────────────────────────────────────────
   // Helpers
   // ──────────────────────────────────────────────
 
-  private buildTokenResponse(user: {
+  private generateRefreshToken(): string {
+    return crypto.randomBytes(40).toString('hex');
+  }
+
+  private hashToken(token: string): string {
+    return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
+  private async buildTokenResponse(user: {
     id: string;
     email: string;
     role: string;
@@ -184,10 +193,34 @@ export class AuthService {
       role: user.role as JwtPayload['role'],
     };
 
-    const accessToken = this.jwtService.sign(payload);
+    // Short-lived access token (15 minutes)
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+
+    // Generate a long-lived refresh token (7 days)
+    const refreshToken = this.generateRefreshToken();
+    const tokenHash = this.hashToken(refreshToken);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    // Clean up expired tokens for this user to manage DB space
+    await this.prisma.refreshToken.deleteMany({
+      where: {
+        userId: user.id,
+        expiresAt: { lt: new Date() },
+      },
+    });
+
+    // Save refresh token to database
+    await this.prisma.refreshToken.create({
+      data: {
+        tokenHash,
+        userId: user.id,
+        expiresAt,
+      },
+    });
 
     return {
       accessToken,
+      refreshToken,
       user: {
         id: user.id,
         email: user.email,
@@ -197,5 +230,65 @@ export class AuthService {
         phoneNumber: user.phoneNumber,
       },
     };
+  }
+
+  async refresh(refreshToken: string) {
+    if (!refreshToken) {
+      throw new UnauthorizedException('errors.invalid_refresh_token');
+    }
+
+    const tokenHash = this.hashToken(refreshToken);
+
+    const storedToken = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+      include: { user: true },
+    });
+
+    if (!storedToken) {
+      throw new UnauthorizedException('errors.invalid_refresh_token');
+    }
+
+    // Reuse detection
+    if (storedToken.isRevoked) {
+      // Invalidate all tokens for this user for security
+      await this.prisma.refreshToken.updateMany({
+        where: { userId: storedToken.userId },
+        data: { isRevoked: true },
+      });
+      throw new UnauthorizedException('errors.refresh_token_reused');
+    }
+
+    // Expiry check
+    if (storedToken.expiresAt < new Date()) {
+      throw new UnauthorizedException('errors.refresh_token_expired');
+    }
+
+    // User active check
+    if (!storedToken.user.isActive) {
+      throw new UnauthorizedException('errors.user_deactivated');
+    }
+
+    // Revoke old token as part of rotation
+    await this.prisma.refreshToken.update({
+      where: { id: storedToken.id },
+      data: { isRevoked: true },
+    });
+
+    // Issue new access and refresh tokens
+    return await this.buildTokenResponse(storedToken.user);
+  }
+
+  async logout(refreshToken: string) {
+    if (!refreshToken) return;
+
+    const tokenHash = this.hashToken(refreshToken);
+
+    try {
+      await this.prisma.refreshToken.delete({
+        where: { tokenHash },
+      });
+    } catch (e) {
+      // Ignore if already deleted/invalid
+    }
   }
 }

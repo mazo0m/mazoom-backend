@@ -1,5 +1,6 @@
-import { Body, Controller, Post, HttpCode, HttpStatus } from '@nestjs/common';
+import { Body, Controller, Post, HttpCode, HttpStatus, Req, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import * as express from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto } from './dto';
 
@@ -50,8 +51,21 @@ export class AuthController {
     status: 400,
     description: 'Validation failed — invalid input data',
   })
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  async register(
+    @Body() dto: RegisterDto,
+    @Res({ passthrough: true }) response: express.Response,
+  ) {
+    const result = await this.authService.register(dto);
+    response.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+    return {
+      accessToken: result.accessToken,
+      user: result.user,
+    };
   }
 
   /**
@@ -92,8 +106,21 @@ export class AuthController {
       },
     },
   })
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) response: express.Response,
+  ) {
+    const result = await this.authService.login(dto);
+    response.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+    return {
+      accessToken: result.accessToken,
+      user: result.user,
+    };
   }
 
   /**
@@ -110,7 +137,92 @@ export class AuthController {
     status: 200,
     description: 'Login successful',
   })
-  googleLogin(@Body('token') token: string) {
-    return this.authService.googleLogin(token);
+  async googleLogin(
+    @Body('token') token: string,
+    @Res({ passthrough: true }) response: express.Response,
+  ) {
+    const result = await this.authService.googleLogin(token);
+    response.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+    return {
+      accessToken: result.accessToken,
+      user: result.user,
+    };
+  }
+
+  /**
+   * POST /auth/refresh
+   * Validates refresh token cookie and returns a new access token + rotates refresh token.
+   */
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Refresh access token',
+    description: 'Validates the HTTP-only refresh token, rotates it, and returns a new short-lived access token.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Access token refreshed successfully',
+    schema: {
+      example: {
+        accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid or expired refresh token',
+  })
+  async refresh(
+    @Req() request: express.Request,
+    @Res({ passthrough: true }) response: express.Response,
+  ) {
+    const refreshToken = request.cookies['refreshToken'];
+    const result = await this.authService.refresh(refreshToken);
+
+    response.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return {
+      accessToken: result.accessToken,
+    };
+  }
+
+  /**
+   * POST /auth/logout
+   * Clears the refresh token cookie and invalidates it in the database.
+   */
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Logout user',
+    description: 'Clears the refresh token cookie and invalidates the session in the database.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Logged out successfully',
+  })
+  async logout(
+    @Req() request: express.Request,
+    @Res({ passthrough: true }) response: express.Response,
+  ) {
+    const refreshToken = request.cookies['refreshToken'];
+    await this.authService.logout(refreshToken);
+
+    response.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+    });
+
+    return { message: 'Logged out successfully' };
   }
 }
