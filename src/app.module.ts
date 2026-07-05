@@ -11,6 +11,7 @@ import { InvitationModule } from './invitation/invitation.module';
 import { RsvpModule } from './rsvp/rsvp.module';
 import { UserModule } from './user/user.module';
 import { UploadModule } from './upload/upload.module';
+import { TestimonialModule } from './testimonial/testimonial.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { UploadModule } from './upload/upload.module';
     RsvpModule,
     UserModule,
     UploadModule,
+    TestimonialModule,
   ],
   controllers: [AppController],
   providers: [AppService],

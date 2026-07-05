@@ -72,6 +72,11 @@ export class PurchaseRequestService {
             price: true,
           },
         },
+        purchase: {
+          include: {
+            testimonial: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });

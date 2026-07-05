@@ -117,6 +117,7 @@ model Purchase {
   template        Template        @relation(fields: [templateId], references: [id], onDelete: Cascade)
   purchaseRequest PurchaseRequest @relation(fields: [purchaseRequestId], references: [id], onDelete: Cascade)
   invitation      Invitation?
+  testimonial     Testimonial?
 
   @@index([userId])
   @@index([templateId])
@@ -176,3 +177,18 @@ model RSVP {
   @@index([invitationId])
   @@map("rsvps")
 }
+
+/// Client testimonials / reviews for templates/services
+model Testimonial {
+  id         String   @id @default(uuid()) @db.Uuid
+  purchaseId String   @unique @map("purchase_id") @db.Uuid
+  rating     Int
+  comment    String   @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  @@map("testimonials")
+}
+

@@ -225,6 +225,16 @@ export class InvitationService {
             },
           },
         },
+        rsvps: {
+          select: {
+            name: true,
+            message: true,
+            createdAt: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
       },
     });
 
@@ -408,7 +418,7 @@ export class InvitationService {
   // ──────────────────────────────────────────────
 
   private mapInvitationResponse(invitation: any) {
-    const { purchase, ...invitationFields } = invitation;
+    const { purchase, rsvps, ...invitationFields } = invitation;
     return {
       ...invitationFields,
       userId: purchase?.userId,
@@ -418,6 +428,11 @@ export class InvitationService {
       contactPhone: invitationFields.contactPhone,
       allowGuestUploads: invitationFields.allowGuestUploads,
       moments: invitationFields.moments,
+      wishes: rsvps
+        ? rsvps
+            .filter((r: any) => r.message && r.message.trim() !== '')
+            .map((r: any) => ({ name: r.name, text: r.message }))
+        : [],
     };
   }
 }

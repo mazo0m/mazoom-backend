@@ -13,6 +13,7 @@ async function main() {
 
   // 1. Clean database
   console.log('Cleaning old database entries...');
+  await prisma.testimonial.deleteMany();
   await prisma.rSVP.deleteMany();
   await prisma.invitation.deleteMany();
   await prisma.purchase.deleteMany();
@@ -168,6 +169,148 @@ async function main() {
   });
 
   console.log(`Demo invitation successfully mapped! URL slug: "${invitation2.slug}"`);
+
+  // 6. Seed testimonials
+  console.log('Creating testimonial users, purchases, and testimonials...');
+  
+  const user1 = await prisma.user.create({
+    data: {
+      email: 'ahmed@alrashid.com',
+      passwordHash: clientPasswordHash,
+      firstName: 'Ahmed',
+      lastName: 'Al-Rashid',
+      phoneNumber: '+966500000003',
+      role: Role.CLIENT,
+    },
+  });
+
+  const user2 = await prisma.user.create({
+    data: {
+      email: 'sarah@almansoori.com',
+      passwordHash: clientPasswordHash,
+      firstName: 'Sarah',
+      lastName: 'Al-Mansoori',
+      phoneNumber: '+966500000004',
+      role: Role.CLIENT,
+    },
+  });
+
+  const user3 = await prisma.user.create({
+    data: {
+      email: 'khalid@bashir.com',
+      passwordHash: clientPasswordHash,
+      firstName: 'Khalid',
+      lastName: 'Bashir',
+      phoneNumber: '+966500000005',
+      role: Role.CLIENT,
+    },
+  });
+
+  // Purchase & testimonial for Ahmed
+  const req1 = await prisma.purchaseRequest.create({
+    data: {
+      userId: user1.id,
+      templateId: template2.id,
+      contactEmail: user1.email,
+      contactPhone: user1.phoneNumber,
+      status: 'APPROVED',
+    },
+  });
+  const pur1 = await prisma.purchase.create({
+    data: {
+      userId: user1.id,
+      templateId: template2.id,
+      purchaseRequestId: req1.id,
+      slug: 'ahmed-garden',
+    },
+  });
+  await prisma.invitation.create({
+    data: {
+      purchaseId: pur1.id,
+      slug: 'ahmed-garden',
+      eventTitle: 'Wedding Host',
+      eventLocation: 'الرياض',
+      eventDate: new Date('2027-08-01T19:00:00Z'),
+    }
+  });
+  await prisma.testimonial.create({
+    data: {
+      purchaseId: pur1.id,
+      rating: 5,
+      comment: 'The botanical templates are exceptionally elegant. The guest response tracker made coordinating RSVPs for our wedding completely stress-free.',
+    },
+  });
+
+  // Purchase & testimonial for Sarah
+  const req2 = await prisma.purchaseRequest.create({
+    data: {
+      userId: user2.id,
+      templateId: template1.id,
+      contactEmail: user2.email,
+      contactPhone: user2.phoneNumber,
+      status: 'APPROVED',
+    },
+  });
+  const pur2 = await prisma.purchase.create({
+    data: {
+      userId: user2.id,
+      templateId: template1.id,
+      purchaseRequestId: req2.id,
+      slug: 'sarah-royal',
+    },
+  });
+  await prisma.invitation.create({
+    data: {
+      purchaseId: pur2.id,
+      slug: 'sarah-royal',
+      eventTitle: 'Bridal Shower Host',
+      eventLocation: 'جدة',
+      eventDate: new Date('2027-09-12T17:00:00Z'),
+    }
+  });
+  await prisma.testimonial.create({
+    data: {
+      purchaseId: pur2.id,
+      rating: 5,
+      comment: 'So beautiful and extremely simple to customize. Approved in minutes, editable fields work like magic. The audio music player option was a massive hit!',
+    },
+  });
+
+  // Purchase & testimonial for Khalid
+  const req3 = await prisma.purchaseRequest.create({
+    data: {
+      userId: user3.id,
+      templateId: template2.id,
+      contactEmail: user3.email,
+      contactPhone: user3.phoneNumber,
+      status: 'APPROVED',
+    },
+  });
+  const pur3 = await prisma.purchase.create({
+    data: {
+      userId: user3.id,
+      templateId: template2.id,
+      purchaseRequestId: req3.id,
+      slug: 'khalid-garden',
+    },
+  });
+  await prisma.invitation.create({
+    data: {
+      purchaseId: pur3.id,
+      slug: 'khalid-garden',
+      eventTitle: 'Anniversary Host',
+      eventLocation: 'الدمام',
+      eventDate: new Date('2027-10-20T20:00:00Z'),
+    }
+  });
+  await prisma.testimonial.create({
+    data: {
+      purchaseId: pur3.id,
+      rating: 5,
+      comment: 'The guest RSVP count feature was incredibly helpful. I could see the exact counts and companion details live. Saved hours of phone calls!',
+    },
+  });
+
   console.log('Seed process completed successfully!');
 }
 
