@@ -6,6 +6,7 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -22,13 +23,18 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserService } from './user.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { CreateUserDto, UpdateUserByAdminDto } from './dto/admin-user.dto';
+import * as express from 'express';
+import { AbuseService } from '../common/services/abuse.service';
 
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly abuseService: AbuseService,
+  ) {}
 
   @Get('profile')
   @ApiOperation({
@@ -71,8 +77,14 @@ export class UserController {
     description:
       'Conflict — email or phone number already in use by another account',
   })
-  updateProfile(@GetUser('id') userId: string, @Body() dto: UpdateProfileDto) {
-    return this.userService.updateProfile(userId, dto);
+  updateProfile(
+    @GetUser('id') userId: string,
+    @Body() dto: UpdateProfileDto,
+    @Req() request: express.Request,
+  ) {
+    const ip = this.abuseService.extractIp(request);
+    const userAgent = request.headers['user-agent'] || '';
+    return this.userService.updateProfile(userId, dto, ip, userAgent);
   }
 
   @Get()
@@ -116,7 +128,10 @@ export class UserController {
   updateUser(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateUserByAdminDto,
+    @Req() request: express.Request,
   ) {
-    return this.userService.updateUserByAdmin(id, dto);
+    const ip = this.abuseService.extractIp(request);
+    const userAgent = request.headers['user-agent'] || '';
+    return this.userService.updateUserByAdmin(id, dto, ip, userAgent);
   }
 }

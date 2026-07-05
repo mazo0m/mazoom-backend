@@ -4,6 +4,7 @@ import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import * as express from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, GoogleLoginDto } from './dto';
+import { AbuseService } from '../common/services/abuse.service';
 
 /** Shared cookie configuration for refresh tokens. */
 const REFRESH_TOKEN_COOKIE_OPTIONS: express.CookieOptions = {
@@ -16,7 +17,10 @@ const REFRESH_TOKEN_COOKIE_OPTIONS: express.CookieOptions = {
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly abuseService: AbuseService,
+  ) {}
 
   // ──────────────────────────────────────────────
   // Helpers
@@ -133,9 +137,12 @@ export class AuthController {
   })
   async login(
     @Body() dto: LoginDto,
+    @Req() request: express.Request,
     @Res({ passthrough: true }) response: express.Response,
   ) {
-    const result = await this.authService.login(dto);
+    const ip = this.abuseService.extractIp(request);
+    const userAgent = request.headers['user-agent'] || '';
+    const result = await this.authService.login(dto, ip, userAgent);
     this.setRefreshTokenCookie(response, result.refreshToken);
     return {
       accessToken: result.accessToken,
@@ -160,9 +167,12 @@ export class AuthController {
   })
   async googleLogin(
     @Body() dto: GoogleLoginDto,
+    @Req() request: express.Request,
     @Res({ passthrough: true }) response: express.Response,
   ) {
-    const result = await this.authService.googleLogin(dto.token);
+    const ip = this.abuseService.extractIp(request);
+    const userAgent = request.headers['user-agent'] || '';
+    const result = await this.authService.googleLogin(dto.token, ip, userAgent);
     this.setRefreshTokenCookie(response, result.refreshToken);
     return {
       accessToken: result.accessToken,
@@ -199,7 +209,9 @@ export class AuthController {
     @Res({ passthrough: true }) response: express.Response,
   ) {
     const refreshToken = request.cookies['refreshToken'];
-    const result = await this.authService.refresh(refreshToken);
+    const ip = this.abuseService.extractIp(request);
+    const userAgent = request.headers['user-agent'] || '';
+    const result = await this.authService.refresh(refreshToken, ip, userAgent);
     this.setRefreshTokenCookie(response, result.refreshToken);
     return {
       accessToken: result.accessToken,
@@ -225,7 +237,9 @@ export class AuthController {
     @Res({ passthrough: true }) response: express.Response,
   ) {
     const refreshToken = request.cookies['refreshToken'];
-    await this.authService.logout(refreshToken);
+    const ip = this.abuseService.extractIp(request);
+    const userAgent = request.headers['user-agent'] || '';
+    await this.authService.logout(refreshToken, ip, userAgent);
 
     response.clearCookie('refreshToken', {
       httpOnly: true,

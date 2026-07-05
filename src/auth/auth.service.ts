@@ -12,6 +12,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto, LoginDto } from './dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { OAuth2Client } from 'google-auth-library';
+import { AbuseService } from '../common/services/abuse.service';
+import { AuditLogService } from '../common/services/audit-log.service';
+import { RefreshTokenRevokeReason } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -24,6 +27,8 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly abuseService: AbuseService,
+    private readonly auditLogService: AuditLogService,
   ) {
     this.googleClientId = this.configService.getOrThrow<string>('GOOGLE_CLIENT_ID');
     this.googleClient = new OAuth2Client(this.googleClientId);
@@ -74,18 +79,25 @@ export class AuthService {
   // Login
   // ──────────────────────────────────────────────
 
-  async login(dto: LoginDto) {
-    // 1. Find user by email
+  async login(dto: LoginDto, ip: string, userAgent: string) {
+    // 1. Brute force check
+    await this.abuseService.checkLoginBruteForce(dto.email, ip);
+
+    // 2. Find user by email
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
 
     if (!user) {
+      await this.abuseService.recordLoginFailure(dto.email, ip);
+      await this.auditLogService.logLoginFailure(dto.email, 'User not found', ip, userAgent);
       throw new UnauthorizedException('errors.invalid_credentials');
     }
 
-    // 2. Compare password with stored hash
+    // 3. Compare password with stored hash
     if (!user.passwordHash) {
+      await this.abuseService.recordLoginFailure(dto.email, ip);
+      await this.auditLogService.logLoginFailure(dto.email, 'No password hash set', ip, userAgent);
       throw new UnauthorizedException('errors.invalid_credentials');
     }
 
@@ -95,15 +107,24 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
+      await this.abuseService.recordLoginFailure(dto.email, ip);
+      await this.auditLogService.logLoginFailure(dto.email, 'Invalid password', ip, userAgent);
       throw new UnauthorizedException('errors.invalid_credentials');
     }
 
-    // 3. Check if user is active
+    // 4. Check if user is active
     if (!user.isActive) {
+      await this.auditLogService.logLoginFailure(dto.email, 'User deactivated', ip, userAgent);
       throw new UnauthorizedException('errors.user_deactivated');
     }
 
-    // 4. Return JWT
+    // 5. Successful login resets counter
+    await this.abuseService.resetLoginFailures(dto.email, ip);
+
+    // Audit log success
+    await this.auditLogService.logLoginSuccess(user.id, user.email, ip, userAgent);
+
+    // 6. Return JWT
     return await this.buildTokenResponse(user);
   }
 
@@ -136,40 +157,51 @@ export class AuthService {
     }
   }
 
-  async googleLogin(token: string) {
-    // 1. Verify Google token and get user details
-    const googleUser = await this.verifyGoogleToken(token);
+  async googleLogin(token: string, ip: string, userAgent: string) {
+    try {
+      // 1. Verify Google token and get user details
+      const googleUser = await this.verifyGoogleToken(token);
 
-    // 2. Find if user exists by email
-    let user = await this.prisma.user.findUnique({
-      where: { email: googleUser.email },
-    });
-
-    if (!user) {
-      // 3. Create user if they don't exist
-      user = await this.prisma.user.create({
-        data: {
-          email: googleUser.email,
-          firstName: googleUser.firstName,
-          lastName: googleUser.lastName,
-          passwordHash: null,
-          phoneNumber: null,
-          role: 'CLIENT',
-          isActive: true,
-        },
+      // 2. Find if user exists by email
+      let user = await this.prisma.user.findUnique({
+        where: { email: googleUser.email },
       });
-    } else {
-      // Check if user is active
-      if (!user.isActive) {
-        throw new UnauthorizedException('errors.user_deactivated');
-      }
-    }
 
-    // 4. Return JWT
-    return await this.buildTokenResponse(user);
+      if (!user) {
+        // 3. Create user if they don't exist
+        user = await this.prisma.user.create({
+          data: {
+            email: googleUser.email,
+            firstName: googleUser.firstName,
+            lastName: googleUser.lastName,
+            passwordHash: null,
+            phoneNumber: null,
+            role: 'CLIENT',
+            isActive: true,
+          },
+        });
+      } else {
+        // Check if user is active
+        if (!user.isActive) {
+          await this.auditLogService.logLoginFailure(googleUser.email, 'User deactivated (Google)', ip, userAgent);
+          throw new UnauthorizedException('errors.user_deactivated');
+        }
+      }
+
+      await this.auditLogService.logLoginSuccess(user.id, user.email, ip, userAgent);
+
+      // 4. Return JWT
+      return await this.buildTokenResponse(user);
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      await this.auditLogService.logLoginFailure('unknown', `Google login failed: ${error instanceof Error ? error.message : 'Unknown error'}`, ip, userAgent);
+      throw error;
+    }
   }
 
-  async refresh(refreshToken: string) {
+  async refresh(refreshToken: string, ip: string, userAgent: string) {
     if (!refreshToken) {
       throw new UnauthorizedException('errors.invalid_refresh_token');
     }
@@ -188,8 +220,20 @@ export class AuthService {
     if (storedToken.isRevoked) {
       await this.prisma.refreshToken.updateMany({
         where: { userId: storedToken.userId },
-        data: { isRevoked: true },
+        data: {
+          isRevoked: true,
+          revokedAt: new Date(),
+          revokedReason: RefreshTokenRevokeReason.ROTATED,
+        },
       });
+
+      // Log token reuse detection
+      await this.auditLogService.logRefreshTokenReuse(
+        storedToken.userId,
+        tokenHash,
+        ip,
+        userAgent
+      );
 
       throw new UnauthorizedException('errors.refresh_token_reused');
     }
@@ -219,7 +263,7 @@ export class AuthService {
       data: {
         isRevoked: true,
         revokedAt: new Date(),
-        revokedReason: 'ROTATED',
+        revokedReason: RefreshTokenRevokeReason.ROTATED,
         replacedBy: newToken.id,
       },
     });
@@ -248,19 +292,28 @@ export class AuthService {
     };
   }
 
-  async logout(refreshToken: string) {
+  async logout(refreshToken: string, ip: string, userAgent: string) {
     if (!refreshToken) return;
 
     const tokenHash = this.hashToken(refreshToken);
+
+    const storedToken = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+      select: { userId: true },
+    });
 
     await this.prisma.refreshToken.updateMany({
       where: { tokenHash },
       data: {
         isRevoked: true,
         revokedAt: new Date(),
-        revokedReason: 'LOGOUT',
+        revokedReason: RefreshTokenRevokeReason.LOGOUT,
       },
     });
+
+    if (storedToken) {
+      await this.auditLogService.logLogout(storedToken.userId, ip, userAgent);
+    }
   }
 
   // ──────────────────────────────────────────────
