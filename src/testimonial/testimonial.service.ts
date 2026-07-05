@@ -1,10 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTestimonialDto } from './dto/create-testimonial.dto';
 
 @Injectable()
 export class TestimonialService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+  ) { }
 
   // ──────────────────────────────────────────────
   // Create or Update Testimonial (Client only)
@@ -24,7 +29,7 @@ export class TestimonialService {
     }
 
     // 2. Create or update testimonial
-    return this.prisma.testimonial.upsert({
+    const result = await this.prisma.testimonial.upsert({
       where: { purchaseId: dto.purchaseId },
       update: {
         rating: dto.rating,
@@ -36,12 +41,21 @@ export class TestimonialService {
         comment: dto.comment,
       },
     });
+
+    // Invalidate testimonials cache
+    await this.cacheManager.del('testimonials:all');
+
+    return result;
   }
 
   // ──────────────────────────────────────────────
   // Get all Testimonials (Public)
   // ──────────────────────────────────────────────
   async findAll() {
+    const cacheKey = 'testimonials:all';
+    const cached = await this.cacheManager.get<any[]>(cacheKey);
+    if (cached) return cached;
+
     const testimonials = await this.prisma.testimonial.findMany({
       include: {
         purchase: {
@@ -71,7 +85,7 @@ export class TestimonialService {
     });
 
     // Map database models to standard landing page testimonial format
-    return testimonials.map((t) => {
+    const mapped = testimonials.map((t) => {
       const user = t.purchase.user;
       const firstName = user?.firstName || '';
       const lastName = user?.lastName || '';
@@ -101,5 +115,11 @@ export class TestimonialService {
         eventTitle,
       };
     });
+
+    // Cache testimonials for 30 minutes (1,800,000 ms)
+    await this.cacheManager.set(cacheKey, mapped, 1800000);
+
+    return mapped;
   }
 }
+

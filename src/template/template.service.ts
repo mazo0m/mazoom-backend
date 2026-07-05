@@ -1,10 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTemplateDto, UpdateTemplateDto } from './dto';
 
 @Injectable()
 export class TemplateService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+  ) { }
 
   // ──────────────────────────────────────────────
   // Create (Admin only)
@@ -29,6 +34,9 @@ export class TemplateService {
       },
     });
 
+    // Invalidate templates list cache
+    await this.cacheManager.del('templates:all');
+
     return template;
   }
 
@@ -37,9 +45,18 @@ export class TemplateService {
   // ──────────────────────────────────────────────
 
   async findAll() {
-    return this.prisma.template.findMany({
+    const cacheKey = 'templates:all';
+    const cached = await this.cacheManager.get<any[]>(cacheKey);
+    if (cached) return cached;
+
+    const templates = await this.prisma.template.findMany({
       orderBy: { createdAt: 'desc' },
     });
+
+    // Cache list for 1 hour (3,600,000 ms)
+    await this.cacheManager.set(cacheKey, templates, 3600000);
+
+    return templates;
   }
 
   // ──────────────────────────────────────────────
@@ -47,6 +64,10 @@ export class TemplateService {
   // ──────────────────────────────────────────────
 
   async findOne(id: string) {
+    const cacheKey = `templates:id:${id}`;
+    const cached = await this.cacheManager.get<any>(cacheKey);
+    if (cached) return cached;
+
     const template = await this.prisma.template.findUnique({
       where: { id },
     });
@@ -54,6 +75,9 @@ export class TemplateService {
     if (!template) {
       throw new NotFoundException(`errors.template_not_found|${id}`);
     }
+
+    // Cache template detail for 1 hour (3,600,000 ms)
+    await this.cacheManager.set(cacheKey, template, 3600000);
 
     return template;
   }
@@ -71,7 +95,7 @@ export class TemplateService {
       throw new NotFoundException(`errors.template_not_found|${id}`);
     }
 
-    return this.prisma.template.update({
+    const updated = await this.prisma.template.update({
       where: { id },
       data: {
         title: dto.title,
@@ -89,5 +113,12 @@ export class TemplateService {
         category: dto.category,
       },
     });
+
+    // Invalidate caches
+    await this.cacheManager.del('templates:all');
+    await this.cacheManager.del(`templates:id:${id}`);
+
+    return updated;
   }
 }
+

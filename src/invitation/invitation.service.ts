@@ -4,7 +4,10 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Inject,
 } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { RsvpAttendance } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateInvitationDto, UpdateInvitationDto } from './dto';
@@ -22,7 +25,10 @@ const UPDATABLE_BOOLEAN_FIELDS = ['isActive', 'allowGuestUploads'] as const;
 
 @Injectable()
 export class InvitationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+  ) {}
 
   /** Standard include clause for invitation responses with template info. */
   private readonly invitationInclude = {
@@ -160,6 +166,12 @@ export class InvitationService {
       include: this.invitationInclude,
     });
 
+    // Invalidate invitation caches
+    await this.cacheManager.del(`invitations:slug:${invitation.slug}`);
+    if (updatedInvitation.slug !== invitation.slug) {
+      await this.cacheManager.del(`invitations:slug:${updatedInvitation.slug}`);
+    }
+
     return this.mapInvitationResponse(updatedInvitation);
   }
 
@@ -167,43 +179,50 @@ export class InvitationService {
   // Get invitation by slug (Public)
   // ──────────────────────────────────────────────
 
-  async findBySlug(slug: string, userId?: string) {
-    const invitation = await this.prisma.invitation.findUnique({
-      where: { slug },
-      include: {
-        purchase: {
-          include: {
-            template: {
-              select: {
-                id: true,
-                title: true,
-                previewImage: true,
-                demoLink: true,
+  async findBySlug(slug: string, userId?: string, userRole?: string) {
+    const cacheKey = `invitations:slug:${slug}`;
+    let invitation = await this.cacheManager.get<any>(cacheKey);
+
+    if (!invitation) {
+      invitation = await this.prisma.invitation.findUnique({
+        where: { slug },
+        include: {
+          purchase: {
+            include: {
+              template: {
+                select: {
+                  id: true,
+                  title: true,
+                  previewImage: true,
+                  demoLink: true,
+                },
               },
             },
           },
-        },
-        rsvps: {
-          select: {
-            name: true,
-            message: true,
-            createdAt: true,
+          rsvps: {
+            select: {
+              name: true,
+              message: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
           },
-          orderBy: { createdAt: 'desc' },
         },
-      },
-    });
+      });
 
-    if (!invitation) {
-      throw new NotFoundException(`errors.invitation_slug_not_found|${slug}`);
+      if (!invitation) {
+        throw new NotFoundException(`errors.invitation_slug_not_found|${slug}`);
+      }
+
+      // Cache invitation details for 10 minutes (600,000 ms)
+      await this.cacheManager.set(cacheKey, invitation, 600000);
     }
 
     // Check if invitation is deactivated
     if (!invitation.isActive) {
-      const isOwnerOrAdmin = await this.isOwnerOrAdmin(
-        userId,
-        invitation.purchase.userId,
-      );
+      const isOwnerOrAdmin =
+        (userId && invitation.purchase.userId === userId) ||
+        userRole === 'ADMIN';
 
       if (!isOwnerOrAdmin) {
         throw new ForbiddenException('errors.invitation_deactivated');
@@ -226,10 +245,14 @@ export class InvitationService {
       throw new NotFoundException(`errors.invitation_not_found|${id}`);
     }
 
-    return this.prisma.invitation.update({
+    const updated = await this.prisma.invitation.update({
       where: { id },
       data: { isActive },
     });
+
+    await this.cacheManager.del(`invitations:slug:${invitation.slug}`);
+
+    return updated;
   }
 
   // ──────────────────────────────────────────────
@@ -314,6 +337,8 @@ export class InvitationService {
       },
       include: this.invitationInclude,
     });
+
+    await this.cacheManager.del(`invitations:slug:${invitation.slug}`);
 
     return this.mapInvitationResponse(updated);
   }

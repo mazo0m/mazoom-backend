@@ -2,8 +2,11 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Inject,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { User, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -16,7 +19,11 @@ type SafeUser = Omit<User, 'passwordHash'>;
 export class UserService {
   private readonly SALT_ROUNDS = 10;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+  ) { }
+
 
   // ──────────────────────────────────────────────
   // Helpers
@@ -126,6 +133,8 @@ export class UserService {
       data: updateData,
     });
 
+    await this.cacheManager.del(`users:id:${userId}`);
+
     return this.excludePassword(updatedUser);
   }
 
@@ -201,6 +210,8 @@ export class UserService {
       where: { id },
       data: updateData,
     });
+
+    await this.cacheManager.del(`users:id:${id}`);
 
     return this.excludePassword(updated);
   }

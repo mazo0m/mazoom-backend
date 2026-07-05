@@ -219,8 +219,9 @@ export class InvitationController {
   findBySlug(
     @Param('slug') slug: string,
     @GetUser('id') userId?: string,
+    @GetUser('role') userRole?: string,
   ) {
-    return this.invitationService.findBySlug(slug, userId);
+    return this.invitationService.findBySlug(slug, userId, userRole);
   }
 
   /**

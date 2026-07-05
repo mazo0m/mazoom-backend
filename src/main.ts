@@ -14,6 +14,10 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const logger = new Logger('Bootstrap');
 
+  // ── Trust Proxy ───────────────────────────────────────────────────
+  // Enables correct client IP parsing when hosted behind reverse proxies (Nginx, Cloudflare, etc.)
+  app.set('trust proxy', true);
+
   // ── Security Headers ──────────────────────────────────────────────
   app.use(helmet());
   app.use(cookieParser());

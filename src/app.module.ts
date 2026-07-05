@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisStore } from 'cache-manager-redis-yet';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -21,15 +23,41 @@ import { HealthModule } from './health/health.module';
     // Load .env variables globally
     ConfigModule.forRoot({ isGlobal: true }),
 
-    // Global rate limiting — 100 requests per 60 seconds per IP
-    ThrottlerModule.forRoot({
-      throttlers: [
-        {
-          ttl: 60000,
-          limit: 100,
-        },
-      ],
+    // Global Cache — uses Redis if REDIS_URL is configured, falls back to memory
+    CacheModule.registerAsync({
+      isGlobal: true,
+      inject: [ConfigService],
+      useFactory: async (config: ConfigService) => {
+        const redisUrl = config.get<string>('REDIS_URL');
+        if (redisUrl) {
+          const store = await redisStore({
+            url: redisUrl,
+            ttl: 60000, // 60 seconds
+          });
+          return { store };
+        }
+        return {
+          ttl: 60000, // 60 seconds
+        };
+      },
     }),
+
+    // Global rate limiting — 100 requests per 60 seconds per IP (uses Redis if configured)
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const redisUrl = config.get<string>('REDIS_URL');
+        return {
+          throttlers: [
+            {
+              ttl: 60000,
+              limit: 100,
+            },
+          ],
+        };
+      },
+    }),
+
 
     PrismaModule,
     AuthModule,

@@ -8,7 +8,7 @@ import { RegisterDto, LoginDto, GoogleLoginDto } from './dto';
 /** Shared cookie configuration for refresh tokens. */
 const REFRESH_TOKEN_COOKIE_OPTIONS: express.CookieOptions = {
   httpOnly: true,
-  secure: true,
+  secure: process.env.NODE_ENV === 'production',
   sameSite: 'strict',
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 };

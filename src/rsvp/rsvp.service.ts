@@ -1,10 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRsvpDto } from './dto';
 
 @Injectable()
 export class RsvpService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+  ) { }
 
   // ──────────────────────────────────────────────
   // Submit RSVP (Public — any guest)
@@ -33,6 +38,10 @@ export class RsvpService {
       },
     });
 
+    // Invalidate the invitation slug cache so guestbook updates instantly
+    await this.cacheManager.del(`invitations:slug:${invitation.slug}`);
+
     return rsvp;
   }
 }
+
