@@ -1,8 +1,10 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -13,13 +15,19 @@ import { OAuth2Client } from 'google-auth-library';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private readonly SALT_ROUNDS = 10;
-  private readonly googleClient = new OAuth2Client();
+  private readonly googleClient: OAuth2Client;
+  private readonly googleClientId: string;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.googleClientId = this.configService.getOrThrow<string>('GOOGLE_CLIENT_ID');
+    this.googleClient = new OAuth2Client(this.googleClientId);
+  }
 
   // ──────────────────────────────────────────────
   // Registration
@@ -104,21 +112,14 @@ export class AuthService {
   // ──────────────────────────────────────────────
 
   async verifyGoogleToken(token: string) {
-    // Mock / fallback configuration for local simulation/testing
-    if (token && token.startsWith('mock_')) {
-      const parts = token.split('_');
-      return {
-        email: parts[1] || 'mock@gmail.com',
-        firstName: parts[2] || 'Google',
-        lastName: parts[3] || 'User',
-      };
+    if (!token) {
+      throw new UnauthorizedException('errors.invalid_google_token');
     }
 
     try {
-      const clientId = process.env.GOOGLE_CLIENT_ID;
       const ticket = await this.googleClient.verifyIdToken({
         idToken: token,
-        audience: clientId,
+        audience: this.googleClientId,
       });
       const payload = ticket.getPayload();
       if (!payload || !payload.email) {
@@ -129,7 +130,8 @@ export class AuthService {
         firstName: payload.given_name || '',
         lastName: payload.family_name || '',
       };
-    } catch (e) {
+    } catch (error) {
+      this.logger.warn(`Google token verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       throw new UnauthorizedException('errors.invalid_google_token');
     }
   }

@@ -9,6 +9,7 @@ import {
   IsUrl,
   IsUUID,
   Matches,
+  MaxLength,
 } from 'class-validator';
 
 export class CreateInvitationDto {
@@ -28,6 +29,7 @@ export class CreateInvitationDto {
   })
   @IsString()
   @IsNotEmpty({ message: 'Slug is required' })
+  @MaxLength(100, { message: 'Slug must not exceed 100 characters' })
   @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
     message:
       'Slug must be lowercase alphanumeric with hyphens only (e.g. "ahmed-wedding")',
@@ -40,6 +42,7 @@ export class CreateInvitationDto {
   })
   @IsString()
   @IsNotEmpty({ message: 'Event title is required' })
+  @MaxLength(200, { message: 'Event title must not exceed 200 characters' })
   eventTitle: string;
 
   @ApiProperty({
@@ -48,6 +51,7 @@ export class CreateInvitationDto {
   })
   @IsString()
   @IsNotEmpty({ message: 'Event location is required' })
+  @MaxLength(300, { message: 'Event location must not exceed 300 characters' })
   eventLocation: string;
 
   @ApiProperty({

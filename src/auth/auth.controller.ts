@@ -1,18 +1,47 @@
 import { Body, Controller, Post, HttpCode, HttpStatus, Req, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import * as express from 'express';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto } from './dto';
+import { RegisterDto, LoginDto, GoogleLoginDto } from './dto';
+
+/** Shared cookie configuration for refresh tokens. */
+const REFRESH_TOKEN_COOKIE_OPTIONS: express.CookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+};
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // ──────────────────────────────────────────────
+  // Helpers
+  // ──────────────────────────────────────────────
+
+  /**
+   * Sets the refresh token as an HTTP-only cookie on the response.
+   * Extracted to avoid duplicating cookie config across every auth endpoint.
+   */
+  private setRefreshTokenCookie(
+    response: express.Response,
+    refreshToken: string,
+  ): void {
+    response.cookie('refreshToken', refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+  }
+
+  // ──────────────────────────────────────────────
+  // Endpoints
+  // ──────────────────────────────────────────────
+
   /**
    * POST /auth/register
    * Creates a new CLIENT account and returns a JWT.
    */
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('register')
   @ApiOperation({
     summary: 'Register a new account',
@@ -56,12 +85,7 @@ export class AuthController {
     @Res({ passthrough: true }) response: express.Response,
   ) {
     const result = await this.authService.register(dto);
-    response.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    this.setRefreshTokenCookie(response, result.refreshToken);
     return {
       accessToken: result.accessToken,
       user: result.user,
@@ -72,6 +96,7 @@ export class AuthController {
    * POST /auth/login
    * Validates credentials and returns a JWT.
    */
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -111,12 +136,7 @@ export class AuthController {
     @Res({ passthrough: true }) response: express.Response,
   ) {
     const result = await this.authService.login(dto);
-    response.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    this.setRefreshTokenCookie(response, result.refreshToken);
     return {
       accessToken: result.accessToken,
       user: result.user,
@@ -127,6 +147,7 @@ export class AuthController {
    * POST /auth/google
    * Validates Google credential token, registers/logs in the user and returns a JWT.
    */
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('google')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -138,16 +159,11 @@ export class AuthController {
     description: 'Login successful',
   })
   async googleLogin(
-    @Body('token') token: string,
+    @Body() dto: GoogleLoginDto,
     @Res({ passthrough: true }) response: express.Response,
   ) {
-    const result = await this.authService.googleLogin(token);
-    response.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    const result = await this.authService.googleLogin(dto.token);
+    this.setRefreshTokenCookie(response, result.refreshToken);
     return {
       accessToken: result.accessToken,
       user: result.user,
@@ -158,6 +174,7 @@ export class AuthController {
    * POST /auth/refresh
    * Validates refresh token cookie and returns a new access token + rotates refresh token.
    */
+  @SkipThrottle()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -183,14 +200,7 @@ export class AuthController {
   ) {
     const refreshToken = request.cookies['refreshToken'];
     const result = await this.authService.refresh(refreshToken);
-
-    response.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
+    this.setRefreshTokenCookie(response, result.refreshToken);
     return {
       accessToken: result.accessToken,
     };

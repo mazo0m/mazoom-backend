@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  Headers,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -10,7 +9,6 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -19,18 +17,20 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { JwtAuthGuard, RolesGuard } from '../auth/guards';
+import { JwtAuthGuard, OptionalJwtAuthGuard, RolesGuard } from '../auth/guards';
 import { Roles, GetUser } from '../auth/decorators';
 import { InvitationService } from './invitation.service';
-import { CreateInvitationDto, UpdateInvitationDto } from './dto';
+import {
+  CreateInvitationDto,
+  UpdateInvitationDto,
+  AddMomentDto,
+  ToggleStatusDto,
+} from './dto';
 
 @ApiTags('Invitations')
 @Controller('invitations')
 export class InvitationController {
-  constructor(
-    private readonly invitationService: InvitationService,
-    private readonly jwtService: JwtService,
-  ) {}
+  constructor(private readonly invitationService: InvitationService) {}
 
   /**
    * POST /invitations
@@ -148,8 +148,11 @@ export class InvitationController {
   /**
    * POST /invitations/:id/moments
    * Adds a moment (photo link) to the invitation.
+   * Uses optional auth — authenticated users get ownership checks,
+   * anonymous guests are allowed if guest uploads are enabled.
    */
   @Post(':id/moments')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: 'Add a photo moment to the invitation',
     description: 'Enables guests or hosts to add photos/moments.',
@@ -161,28 +164,20 @@ export class InvitationController {
   })
   addMoment(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: { url: string },
-    @Headers('authorization') authHeader?: string,
+    @Body() dto: AddMomentDto,
+    @GetUser('id') userId?: string,
   ) {
-    let userId: string | undefined;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      try {
-        const token = authHeader.split(' ')[1];
-        const payload: any = this.jwtService.decode(token);
-        if (payload && payload.sub) {
-          userId = payload.sub;
-        }
-      } catch {}
-    }
-    return this.invitationService.addMoment(id, body.url, userId);
+    return this.invitationService.addMoment(id, dto.url, userId);
   }
 
   /**
    * GET /invitations/slug/:slug
    * Public endpoint — used by the frontend to fetch invitation data
    * when a guest opens a shareable link (e.g. mazoom.com/invite/ahmed-wedding).
+   * Uses optional auth to allow owner/admin access to deactivated invitations.
    */
   @Get('slug/:slug')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: 'Get invitation by slug (Public)',
     description:
@@ -221,21 +216,12 @@ export class InvitationController {
     },
   })
   @ApiResponse({ status: 404, description: 'Invitation not found' })
-  async findBySlug(
+  findBySlug(
     @Param('slug') slug: string,
-    @Headers('authorization') authHeader?: string,
+    @GetUser('id') userId?: string,
+    @GetUser('role') userRole?: string,
   ) {
-    let userId: string | undefined;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      try {
-        const token = authHeader.split(' ')[1];
-        const payload: any = this.jwtService.decode(token);
-        if (payload && payload.sub) {
-          userId = payload.sub;
-        }
-      } catch {}
-    }
-    return this.invitationService.findBySlug(slug, userId);
+    return this.invitationService.findBySlug(slug, userId, userRole);
   }
 
   /**
@@ -318,8 +304,8 @@ export class InvitationController {
   })
   toggleStatus(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: { isActive: boolean },
+    @Body() dto: ToggleStatusDto,
   ) {
-    return this.invitationService.toggleStatus(id, body.isActive);
+    return this.invitationService.toggleStatus(id, dto.isActive);
   }
 }

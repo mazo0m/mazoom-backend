@@ -1,5 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { RsvpService } from './rsvp.service';
 import { CreateRsvpDto } from './dto';
 
@@ -12,6 +13,7 @@ export class RsvpController {
    * POST /rsvp
    * Public endpoint — allows any guest to submit their RSVP.
    */
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
   @Post()
   @ApiOperation({
     summary: 'Submit an RSVP (Public)',
