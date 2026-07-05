@@ -9,9 +9,35 @@ import { RsvpAttendance } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateInvitationDto, UpdateInvitationDto } from './dto';
 
+/** Fields from the DTO that map directly to Prisma update data. */
+const UPDATABLE_STRING_FIELDS = [
+  'slug', 'languageMode', 'eventTitle', 'eventTitleAr', 'eventTitleEn',
+  'eventLocation', 'eventLocationAr', 'eventLocationEn',
+  'locationUrl', 'welcomeText', 'welcomeTextAr', 'welcomeTextEn',
+  'musicUrl', 'contactName', 'contactPhone',
+] as const;
+
+const UPDATABLE_ARRAY_FIELDS = ['images', 'eventProgram', 'eventDetails', 'moments'] as const;
+const UPDATABLE_BOOLEAN_FIELDS = ['isActive', 'allowGuestUploads'] as const;
+
 @Injectable()
 export class InvitationService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /** Standard include clause for invitation responses with template info. */
+  private readonly invitationInclude = {
+    purchase: {
+      include: {
+        template: {
+          select: {
+            id: true,
+            title: true,
+            previewImage: true,
+          },
+        },
+      },
+    },
+  } as const;
 
   // ──────────────────────────────────────────────
   // Create invitation (Client only)
@@ -21,9 +47,7 @@ export class InvitationService {
     // 1. Verify the client has access to this purchase
     const purchase = await this.prisma.purchase.findUnique({
       where: { id: dto.purchaseId },
-      include: {
-        invitation: true,
-      },
+      include: { invitation: true },
     });
 
     if (!purchase) {
@@ -40,18 +64,10 @@ export class InvitationService {
       throw new BadRequestException('errors.invitation_exists');
     }
 
-    // 3. Check slug uniqueness
-    const existingSlug = await this.prisma.invitation.findUnique({
-      where: { slug: dto.slug },
-    });
+    // 2. Check slug uniqueness
+    await this.ensureSlugAvailable(dto.slug);
 
-    const isReserved = await this.isSlugReserved(dto.slug);
-
-    if (existingSlug || isReserved) {
-      throw new ConflictException(`errors.slug_taken|${dto.slug}`);
-    }
-
-    // 4. Create the invitation
+    // 3. Create the invitation
     const invitation = await this.prisma.invitation.create({
       data: {
         purchaseId: dto.purchaseId,
@@ -77,27 +93,14 @@ export class InvitationService {
         allowGuestUploads: dto.allowGuestUploads ?? true,
         moments: dto.moments ?? [],
       },
-      include: {
-        purchase: {
-          include: {
-            template: {
-              select: {
-                id: true,
-                title: true,
-                previewImage: true,
-              },
-            },
-          },
-        },
-      },
+      include: this.invitationInclude,
     });
 
-    // Adapt response structure to keep frontend/admin representations clean
     return this.mapInvitationResponse(invitation);
   }
 
   // ──────────────────────────────────────────────
-  // Update invitation (Client only — owner)
+  // Update invitation (Client owner or Admin)
   // ──────────────────────────────────────────────
 
   async update(
@@ -109,9 +112,7 @@ export class InvitationService {
     // 1. Find the invitation
     const invitation = await this.prisma.invitation.findUnique({
       where: { id: invitationId },
-      include: {
-        purchase: true,
-      },
+      include: { purchase: true },
     });
 
     if (!invitation) {
@@ -127,79 +128,36 @@ export class InvitationService {
 
     // 3. If slug is being updated, check uniqueness
     if (dto.slug && dto.slug !== invitation.slug) {
-      const existingSlug = await this.prisma.invitation.findUnique({
-        where: { slug: dto.slug },
-      });
+      await this.ensureSlugAvailable(dto.slug);
 
-      const isReserved = await this.isSlugReserved(dto.slug);
-
-      if (existingSlug || isReserved) {
-        throw new ConflictException(`errors.slug_taken|${dto.slug}`);
-      }
-
-      // Also update slug in purchase record if appropriate
+      // Also update slug in purchase record
       await this.prisma.purchase.update({
         where: { id: invitation.purchaseId },
         data: { slug: dto.slug },
       });
     }
 
-    // 4. Build the update payload (only include provided fields)
+    // 4. Build update payload dynamically from DTO (replaces 20+ manual if-checks)
     const updateData: Record<string, any> = {};
 
-    if (dto.slug !== undefined) updateData.slug = dto.slug;
-    if (dto.languageMode !== undefined)
-      updateData.languageMode = dto.languageMode;
-    if (dto.eventTitle !== undefined) updateData.eventTitle = dto.eventTitle;
-    if (dto.eventTitleAr !== undefined)
-      updateData.eventTitleAr = dto.eventTitleAr;
-    if (dto.eventTitleEn !== undefined)
-      updateData.eventTitleEn = dto.eventTitleEn;
-    if (dto.eventLocation !== undefined)
-      updateData.eventLocation = dto.eventLocation;
-    if (dto.eventLocationAr !== undefined)
-      updateData.eventLocationAr = dto.eventLocationAr;
-    if (dto.eventLocationEn !== undefined)
-      updateData.eventLocationEn = dto.eventLocationEn;
-    if (dto.eventDate !== undefined)
+    for (const field of UPDATABLE_STRING_FIELDS) {
+      if (dto[field] !== undefined) updateData[field] = dto[field];
+    }
+    for (const field of UPDATABLE_ARRAY_FIELDS) {
+      if (dto[field] !== undefined) updateData[field] = dto[field];
+    }
+    for (const field of UPDATABLE_BOOLEAN_FIELDS) {
+      if (dto[field] !== undefined) updateData[field] = dto[field];
+    }
+    if (dto.eventDate !== undefined) {
       updateData.eventDate = new Date(dto.eventDate);
-    if (dto.locationUrl !== undefined) updateData.locationUrl = dto.locationUrl;
-    if (dto.welcomeText !== undefined) updateData.welcomeText = dto.welcomeText;
-    if (dto.welcomeTextAr !== undefined)
-      updateData.welcomeTextAr = dto.welcomeTextAr;
-    if (dto.welcomeTextEn !== undefined)
-      updateData.welcomeTextEn = dto.welcomeTextEn;
-    if (dto.images !== undefined) updateData.images = dto.images;
-    if (dto.musicUrl !== undefined) updateData.musicUrl = dto.musicUrl;
-    if (dto.eventProgram !== undefined)
-      updateData.eventProgram = dto.eventProgram;
-    if (dto.eventDetails !== undefined)
-      updateData.eventDetails = dto.eventDetails;
-    if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
-    if (dto.contactName !== undefined) updateData.contactName = dto.contactName;
-    if (dto.contactPhone !== undefined)
-      updateData.contactPhone = dto.contactPhone;
-    if (dto.allowGuestUploads !== undefined)
-      updateData.allowGuestUploads = dto.allowGuestUploads;
-    if (dto.moments !== undefined) updateData.moments = dto.moments;
+    }
 
     // 5. Update
     const updatedInvitation = await this.prisma.invitation.update({
       where: { id: invitationId },
       data: updateData,
-      include: {
-        purchase: {
-          include: {
-            template: {
-              select: {
-                id: true,
-                title: true,
-                previewImage: true,
-              },
-            },
-          },
-        },
-      },
+      include: this.invitationInclude,
     });
 
     return this.mapInvitationResponse(updatedInvitation);
@@ -231,9 +189,7 @@ export class InvitationService {
             message: true,
             createdAt: true,
           },
-          orderBy: {
-            createdAt: 'desc',
-          },
+          orderBy: { createdAt: 'desc' },
         },
       },
     });
@@ -244,19 +200,10 @@ export class InvitationService {
 
     // Check if invitation is deactivated
     if (!invitation.isActive) {
-      let isOwnerOrAdmin = false;
-      if (userId) {
-        if (userId === invitation.purchase.userId) {
-          isOwnerOrAdmin = true;
-        } else {
-          const caller = await this.prisma.user.findUnique({
-            where: { id: userId },
-          });
-          if (caller?.role === 'ADMIN') {
-            isOwnerOrAdmin = true;
-          }
-        }
-      }
+      const isOwnerOrAdmin = await this.isOwnerOrAdmin(
+        userId,
+        invitation.purchase.userId,
+      );
 
       if (!isOwnerOrAdmin) {
         throw new ForbiddenException('errors.invitation_deactivated');
@@ -293,9 +240,7 @@ export class InvitationService {
     // 1. Find the invitation
     const invitation = await this.prisma.invitation.findUnique({
       where: { id: invitationId },
-      include: {
-        purchase: true,
-      },
+      include: { purchase: true },
     });
 
     if (!invitation) {
@@ -339,39 +284,13 @@ export class InvitationService {
   }
 
   // ──────────────────────────────────────────────
-  // Helper: check if slug is reserved for template demo
-  // ──────────────────────────────────────────────
-
-  private async isSlugReserved(slug: string): Promise<boolean> {
-    const templates = await this.prisma.template.findMany({
-      where: {
-        demoLink: {
-          not: null,
-        },
-      },
-      select: {
-        demoLink: true,
-      },
-    });
-
-    return templates.some((t) => {
-      if (!t.demoLink) return false;
-      const parts = t.demoLink.split('/');
-      const templateSlug = parts[parts.length - 1];
-      return templateSlug.toLowerCase() === slug.toLowerCase();
-    });
-  }
-
-  // ──────────────────────────────────────────────
   // Add a moment (public/guest photo capture)
   // ──────────────────────────────────────────────
 
   async addMoment(invitationId: string, url: string, userId?: string) {
     const invitation = await this.prisma.invitation.findUnique({
       where: { id: invitationId },
-      include: {
-        purchase: true,
-      },
+      include: { purchase: true },
     });
 
     if (!invitation) {
@@ -391,32 +310,65 @@ export class InvitationService {
     const updated = await this.prisma.invitation.update({
       where: { id: invitationId },
       data: {
-        moments: {
-          push: url,
-        },
+        moments: { push: url },
       },
-      include: {
-        purchase: {
-          include: {
-            template: {
-              select: {
-                id: true,
-                title: true,
-                previewImage: true,
-              },
-            },
-          },
-        },
-      },
+      include: this.invitationInclude,
     });
 
     return this.mapInvitationResponse(updated);
   }
 
   // ──────────────────────────────────────────────
-  // Helper: map database output to API response
+  // Private Helpers
   // ──────────────────────────────────────────────
 
+  /**
+   * Ensures a slug is available — checks both invitations table
+   * and template demo links (reserved slugs).
+   */
+  private async ensureSlugAvailable(slug: string): Promise<void> {
+    const existingSlug = await this.prisma.invitation.findUnique({
+      where: { slug },
+    });
+
+    if (existingSlug) {
+      throw new ConflictException(`errors.slug_taken|${slug}`);
+    }
+
+    // Check if slug conflicts with a template demo link
+    // Optimized: query only templates whose demoLink ends with this slug
+    const conflictingTemplate = await this.prisma.template.findFirst({
+      where: {
+        demoLink: { endsWith: `/${slug}` },
+      },
+      select: { id: true },
+    });
+
+    if (conflictingTemplate) {
+      throw new ConflictException(`errors.slug_taken|${slug}`);
+    }
+  }
+
+  /**
+   * Checks if the given userId is the owner of the resource or an ADMIN.
+   */
+  private async isOwnerOrAdmin(
+    userId: string | undefined,
+    ownerId: string,
+  ): Promise<boolean> {
+    if (!userId) return false;
+    if (userId === ownerId) return true;
+
+    const caller = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    return caller?.role === 'ADMIN';
+  }
+
+  /**
+   * Maps database output to a clean API response structure.
+   */
   private mapInvitationResponse(invitation: any) {
     const { purchase, rsvps, ...invitationFields } = invitation;
     return {
@@ -424,10 +376,6 @@ export class InvitationService {
       userId: purchase?.userId,
       templateId: purchase?.templateId,
       template: purchase?.template,
-      contactName: invitationFields.contactName,
-      contactPhone: invitationFields.contactPhone,
-      allowGuestUploads: invitationFields.allowGuestUploads,
-      moments: invitationFields.moments,
       wishes: rsvps
         ? rsvps
             .filter((r: any) => r.message && r.message.trim() !== '')

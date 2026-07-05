@@ -3,6 +3,8 @@ import {
   Catch,
   ArgumentsHost,
   HttpException,
+  HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import * as arTranslations from '../i18n/ar.json';
@@ -14,116 +16,113 @@ interface NestErrorResponse {
   statusCode?: number;
 }
 
-@Catch(HttpException)
-export class HttpExceptionFilter implements ExceptionFilter {
-  catch(exception: HttpException, host: ArgumentsHost) {
+/**
+ * Global exception filter that handles ALL exceptions (not just HttpException).
+ * - Translates error messages to Arabic/English based on Accept-Language header
+ * - Returns a consistent error response shape
+ * - Logs unexpected errors with stack traces
+ */
+@Catch()
+export class AllExceptionsFilter implements ExceptionFilter {
+  private readonly logger = new Logger(AllExceptionsFilter.name);
+
+  catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
-    const status = exception.getStatus();
-    const exceptionResponse = exception.getResponse() as
-      string | NestErrorResponse;
 
+    // Determine status code
+    const status =
+      exception instanceof HttpException
+        ? exception.getStatus()
+        : HttpStatus.INTERNAL_SERVER_ERROR;
+
+    // Determine language
     const acceptLang = request.headers['accept-language'] || '';
     const lang = acceptLang.toString().toLowerCase().includes('en')
       ? 'en'
       : 'ar';
 
-    const translateMessage = (msg: string): string => {
-      const parts = msg.split('|');
-      const key = parts[0];
-      const args = parts.slice(1);
-
-      const dictionary: Record<string, string> =
-        lang === 'en' ? enTranslations : arTranslations;
-
-      let translation = dictionary[key];
-
-      if (translation) {
-        args.forEach((arg, index) => {
-          translation = translation.replace(`{${index}}`, arg);
-        });
-        return translation;
-      }
-
-      // Check if message itself exists in dictionary directly
-      if (dictionary[msg]) {
-        return dictionary[msg];
-      }
-
-      // Dynamic regex matching (IDs, slugs, request status states as fallback)
-      let match: RegExpMatchArray | null;
-      if ((match = msg.match(/^Purchase with ID "([^"]+)" not found$/))) {
-        return lang === 'en'
-          ? msg
-          : `عملية الشراء بالمعرف "${match[1]}" غير موجودة`;
-      }
-      if ((match = msg.match(/^Invitation with ID "([^"]+)" not found$/))) {
-        return lang === 'en' ? msg : `الدعوة بالمعرف "${match[1]}" غير موجودة`;
-      }
-      if ((match = msg.match(/^Template with ID "([^"]+)" not found$/))) {
-        return lang === 'en' ? msg : `القالب بالمعرف "${match[1]}" غير موجود`;
-      }
-      if (
-        (match = msg.match(/^Purchase request with ID "([^"]+)" not found$/))
-      ) {
-        return lang === 'en'
-          ? msg
-          : `طلب الشراء بالمعرف "${match[1]}" غير موجود`;
-      }
-      if ((match = msg.match(/^Invitation with slug "([^"]+)" not found$/))) {
-        return lang === 'en' ? msg : `الدعوة بالرابط "${match[1]}" غير موجودة`;
-      }
-      if (
-        (match = msg.match(
-          /^The slug "([^"]+)" is already taken\. Please choose a different one\.$/,
-        ))
-      ) {
-        return lang === 'en'
-          ? msg
-          : `الرابط "${match[1]}" محجوز بالفعل. يرجى اختيار رابط آخر.`;
-      }
-      if (
-        (match = msg.match(
-          /^Purchase request has already been ([^.]+)\. Only PENDING requests can be updated\.$/,
-        ))
-      ) {
-        if (lang === 'en') return msg;
-        const statusAr =
-          match[1] === 'approved'
-            ? 'مقبولاً'
-            : match[1] === 'rejected'
-              ? 'مرفوضاً'
-              : match[1];
-        return `طلب الشراء بالفعل أصبح ${statusAr}. يمكن فقط تعديل الطلبات المعلقة.`;
-      }
-
-      return msg; // Fallback to original English if no translation matches
-    };
-
-    let responseMessage: string | string[] | undefined;
-    if (typeof exceptionResponse === 'string') {
-      responseMessage = translateMessage(exceptionResponse);
-    } else if (
-      typeof exceptionResponse === 'object' &&
-      exceptionResponse !== null
-    ) {
-      if (Array.isArray(exceptionResponse.message)) {
-        responseMessage = exceptionResponse.message.map((m: string) =>
-          translateMessage(m),
-        );
-      } else if (typeof exceptionResponse.message === 'string') {
-        responseMessage = translateMessage(exceptionResponse.message);
-      } else {
-        responseMessage = exceptionResponse.message;
-      }
+    // Log unexpected (non-HTTP) exceptions with full stack trace
+    if (!(exception instanceof HttpException)) {
+      this.logger.error(
+        `Unhandled exception on ${request.method} ${request.url}`,
+        exception instanceof Error ? exception.stack : String(exception),
+      );
     }
 
-    const modifiedResponse =
-      typeof exceptionResponse === 'object'
-        ? { ...exceptionResponse, message: responseMessage }
-        : { statusCode: status, message: responseMessage };
+    // Build response message
+    let responseMessage: string | string[] | undefined;
+    let errorType: string | undefined;
 
-    response.status(status).json(modifiedResponse);
+    if (exception instanceof HttpException) {
+      const exceptionResponse = exception.getResponse() as
+        | string
+        | NestErrorResponse;
+
+      if (typeof exceptionResponse === 'string') {
+        responseMessage = this.translateMessage(exceptionResponse, lang);
+      } else if (
+        typeof exceptionResponse === 'object' &&
+        exceptionResponse !== null
+      ) {
+        errorType = exceptionResponse.error;
+        if (Array.isArray(exceptionResponse.message)) {
+          responseMessage = exceptionResponse.message.map((m: string) =>
+            this.translateMessage(m, lang),
+          );
+        } else if (typeof exceptionResponse.message === 'string') {
+          responseMessage = this.translateMessage(
+            exceptionResponse.message,
+            lang,
+          );
+        } else {
+          responseMessage = exceptionResponse.message;
+        }
+      }
+    } else {
+      // For non-HTTP exceptions, never expose internals to the client
+      responseMessage =
+        lang === 'en'
+          ? 'An unexpected error occurred'
+          : 'حدث خطأ غير متوقع';
+      errorType = 'Internal Server Error';
+    }
+
+    response.status(status).json({
+      statusCode: status,
+      message: responseMessage,
+      error: errorType,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  // ──────────────────────────────────────────────
+  // Translation Helper
+  // ──────────────────────────────────────────────
+
+  private translateMessage(msg: string, lang: string): string {
+    const parts = msg.split('|');
+    const key = parts[0];
+    const args = parts.slice(1);
+
+    const dictionary: Record<string, string> =
+      lang === 'en' ? enTranslations : arTranslations;
+
+    let translation = dictionary[key];
+
+    if (translation) {
+      args.forEach((arg, index) => {
+        translation = translation.replace(`{${index}}`, arg);
+      });
+      return translation;
+    }
+
+    // Check if message itself exists in dictionary directly
+    if (dictionary[msg]) {
+      return dictionary[msg];
+    }
+
+    return msg; // Fallback to original if no translation matches
   }
 }

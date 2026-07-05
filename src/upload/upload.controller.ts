@@ -2,39 +2,62 @@ import {
   Controller,
   Post,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
   BadRequestException,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { existsSync, mkdirSync } from 'fs';
+import { randomUUID } from 'crypto';
+import { JwtAuthGuard } from '../auth/guards';
 
+/** Allowed MIME types for upload. */
+const ALLOWED_MIME_REGEX = /^(image\/(jpg|jpeg|png|gif|webp)|audio\/(mpeg|mp3|wav|ogg))$/;
+
+@ApiTags('Upload')
 @Controller('upload')
 export class UploadController {
   @Post()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Upload a file (images or audio)',
+    description:
+      'Uploads an image or audio file to the server. ' +
+      'Returns the public URL path. Requires authentication.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiResponse({ status: 201, description: 'File uploaded successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid file type or size' })
+  @ApiResponse({ status: 401, description: 'Unauthorized — missing or invalid JWT' })
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: (req, file, cb) => {
+        destination: (_req, _file, cb) => {
           const uploadPath = './public/uploads';
           if (!existsSync(uploadPath)) {
             mkdirSync(uploadPath, { recursive: true });
           }
           cb(null, uploadPath);
         },
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
+        filename: (_req, file, cb) => {
+          // Use cryptographic random UUID instead of predictable Date.now()
+          const uniqueName = randomUUID();
+          // Sanitize extension — only allow alphanumeric extensions
+          const ext = extname(file.originalname).toLowerCase().replace(/[^a-z0-9.]/g, '');
+          cb(null, `${uniqueName}${ext}`);
         },
       }),
-      fileFilter: (req, file, cb) => {
-        if (
-          !file.mimetype.match(/\/(jpg|jpeg|png|gif|webp|mpeg|mp3|wav|ogg)$/)
-        ) {
+      fileFilter: (_req, file, cb) => {
+        if (!ALLOWED_MIME_REGEX.test(file.mimetype)) {
           return cb(
-            new BadRequestException('Only images and audio files are allowed!'),
+            new BadRequestException('Only images (jpg, png, gif, webp) and audio (mp3, wav, ogg) files are allowed'),
             false,
           );
         }
@@ -45,7 +68,10 @@ export class UploadController {
       },
     }),
   )
-  uploadFile(@UploadedFile() file: any) {
+  uploadFile(
+    @UploadedFile()
+    file: Express.Multer.File,
+  ) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }

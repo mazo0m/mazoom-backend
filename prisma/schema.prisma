@@ -55,6 +55,7 @@ model User {
   role         Role     @default(CLIENT)
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
   purchaseRequests PurchaseRequest[]
@@ -82,12 +83,15 @@ model Template {
   isActive       Boolean          @default(true) @map("is_active")
   category       TemplateCategory @default(Weddings)
   createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
 
 
   // Relations
   purchaseRequests PurchaseRequest[]
   purchases        Purchase[]
 
+  @@index([isActive])
+  @@index([category])
   @@map("templates")
 }
 
@@ -102,6 +106,7 @@ model PurchaseRequest {
   languageMode String        @default("both") @map("language_mode")
   status       RequestStatus @default(PENDING)
   createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
 
   // Relations
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -110,6 +115,8 @@ model PurchaseRequest {
 
   @@index([userId])
   @@index([templateId])
+  @@index([status])
+  @@index([userId, status])
   @@map("purchase_requests")
 }
 
@@ -122,6 +129,7 @@ model Purchase {
   slug              String          @unique
   languageMode      String          @default("both") @map("language_mode")
   createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
 
   // Relations
   user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -162,6 +170,7 @@ model Invitation {
   moments           String[] @default([])
   isActive          Boolean  @default(true) @map("is_active")
   createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   // Relations
   purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
@@ -169,6 +178,7 @@ model Invitation {
 
   @@index([purchaseId])
   @@index([slug])
+  @@index([isActive])
   @@map("invitations")
 }
 
@@ -196,6 +206,7 @@ model Testimonial {
   rating     Int
   comment    String   @db.Text
   createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   // Relations
   purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
@@ -218,4 +229,3 @@ model RefreshToken {
   @@index([userId])
   @@map("refresh_tokens")
 }
-

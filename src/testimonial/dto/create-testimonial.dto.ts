@@ -1,12 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsInt, Min, Max } from 'class-validator';
+import { IsNotEmpty, IsUUID, IsInt, Min, Max, IsString } from 'class-validator';
 
 export class CreateTestimonialDto {
   @ApiProperty({
     description: 'The purchase ID linked to this review/testimonial',
     example: 'd3b07384-d113-4ec2-a5d6-c87cd1d2e052',
+    format: 'uuid',
   })
-  @IsString()
+  @IsUUID('4', { message: 'purchaseId must be a valid UUID' })
   @IsNotEmpty({ message: 'Purchase ID is required' })
   purchaseId: string;
 
