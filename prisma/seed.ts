@@ -62,6 +62,7 @@ async function main() {
       price: 150.00,
       demoLink: '/invite/royal-gold-demo',
       isPremium: true,
+      category: 'Weddings',
       editableFields: {
         eventTitle: { type: 'string', label: 'Event Title', default: 'العريس & العروس' },
         eventDate: { type: 'date', label: 'Event Date' },
@@ -78,6 +79,7 @@ async function main() {
       price: 150.00,
       demoLink: '/invite/garden-demo',
       isPremium: true,
+      category: 'Weddings',
       editableFields: {
         eventTitle: { type: 'string', label: 'Event Title', default: 'أحمد & سارة' },
         eventDate: { type: 'date', label: 'Event Date' },

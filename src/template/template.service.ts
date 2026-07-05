@@ -25,6 +25,7 @@ export class TemplateService {
         demoLink: dto.demoLink,
         isPremium: dto.isPremium ?? false,
         isActive: true,
+        category: dto.category,
       },
     });
 
@@ -85,6 +86,7 @@ export class TemplateService {
         demoLink: dto.demoLink,
         isPremium: dto.isPremium,
         isActive: dto.isActive,
+        category: dto.category,
       },
     });
   }

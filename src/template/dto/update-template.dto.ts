@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
+  IsEnum,
   IsNumber,
   IsOptional,
   IsString,
@@ -8,6 +9,8 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { TemplateCategory } from '@prisma/client';
+
 
 export class UpdateTemplateDto {
   @ApiPropertyOptional({
@@ -110,4 +113,15 @@ export class UpdateTemplateDto {
   @IsOptional()
   @IsBoolean({ message: 'isActive must be a boolean value' })
   isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Category of the invitation template',
+    enum: TemplateCategory,
+    example: 'Weddings',
+  })
+  @IsEnum(TemplateCategory, {
+    message: 'Category must be a valid TemplateCategory enum value',
+  })
+  @IsOptional()
+  category?: TemplateCategory;
 }

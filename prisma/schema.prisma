@@ -32,6 +32,14 @@ enum RsvpAttendance {
   NO
 }
 
+enum TemplateCategory {
+  Weddings          @map("Weddings")
+  BridalShowers     @map("Bridal Showers")
+  EngagementParties @map("Engagement Parties")
+  Birthdays         @map("Birthdays")
+  CorporateEvents   @map("Corporate Events")
+}
+
 // ============================================================================
 // Models
 // ============================================================================
@@ -69,9 +77,11 @@ model Template {
   price          Decimal  @db.Decimal(10, 2)
   editableFields Json     @map("editable_fields")
   demoLink       String?  @map("demo_link")
-  isPremium      Boolean  @default(false) @map("is_premium")
-  isActive       Boolean  @default(true) @map("is_active")
-  createdAt      DateTime @default(now()) @map("created_at")
+  isPremium      Boolean          @default(false) @map("is_premium")
+  isActive       Boolean          @default(true) @map("is_active")
+  category       TemplateCategory @default(Weddings)
+  createdAt      DateTime         @default(now()) @map("created_at")
+
 
   // Relations
   purchaseRequests PurchaseRequest[]
