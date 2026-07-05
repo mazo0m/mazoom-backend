@@ -42,20 +42,14 @@ import { HealthModule } from './health/health.module';
       },
     }),
 
-    // Global rate limiting — 100 requests per 60 seconds per IP (uses Redis if configured)
-    ThrottlerModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
-        const redisUrl = config.get<string>('REDIS_URL');
-        return {
-          throttlers: [
-            {
-              ttl: 60000,
-              limit: 100,
-            },
-          ],
-        };
-      },
+    // Global rate limiting — 100 requests per 60 seconds per IP
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60000,
+          limit: 100,
+        },
+      ],
     }),
 
 
