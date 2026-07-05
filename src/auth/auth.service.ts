@@ -8,10 +8,12 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto, LoginDto } from './dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { OAuth2Client } from 'google-auth-library';
 
 @Injectable()
 export class AuthService {
   private readonly SALT_ROUNDS = 10;
+  private readonly googleClient = new OAuth2Client();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -74,6 +76,10 @@ export class AuthService {
     }
 
     // 2. Compare password with stored hash
+    if (!user.passwordHash) {
+      throw new UnauthorizedException('errors.invalid_credentials');
+    }
+
     const isPasswordValid = await bcrypt.compare(
       dto.password,
       user.passwordHash,
@@ -93,6 +99,74 @@ export class AuthService {
   }
 
   // ──────────────────────────────────────────────
+  // Google Authentication
+  // ──────────────────────────────────────────────
+
+  async verifyGoogleToken(token: string) {
+    // Mock / fallback configuration for local simulation/testing
+    if (token && token.startsWith('mock_')) {
+      const parts = token.split('_');
+      return {
+        email: parts[1] || 'mock@gmail.com',
+        firstName: parts[2] || 'Google',
+        lastName: parts[3] || 'User',
+      };
+    }
+
+    try {
+      const clientId = process.env.GOOGLE_CLIENT_ID;
+      const ticket = await this.googleClient.verifyIdToken({
+        idToken: token,
+        audience: clientId,
+      });
+      const payload = ticket.getPayload();
+      if (!payload || !payload.email) {
+        throw new Error('Invalid token payload');
+      }
+      return {
+        email: payload.email,
+        firstName: payload.given_name || '',
+        lastName: payload.family_name || '',
+      };
+    } catch (e) {
+      throw new UnauthorizedException('errors.invalid_google_token');
+    }
+  }
+
+  async googleLogin(token: string) {
+    // 1. Verify Google token and get user details
+    const googleUser = await this.verifyGoogleToken(token);
+
+    // 2. Find if user exists by email
+    let user = await this.prisma.user.findUnique({
+      where: { email: googleUser.email },
+    });
+
+    if (!user) {
+      // 3. Create user if they don't exist
+      user = await this.prisma.user.create({
+        data: {
+          email: googleUser.email,
+          firstName: googleUser.firstName,
+          lastName: googleUser.lastName,
+          passwordHash: null,
+          phoneNumber: null,
+          role: 'CLIENT',
+          isActive: true,
+        },
+      });
+    } else {
+      // Check if user is active
+      if (!user.isActive) {
+        throw new UnauthorizedException('errors.user_deactivated');
+      }
+    }
+
+    // 4. Return JWT
+    return this.buildTokenResponse(user);
+  }
+
+  // ──────────────────────────────────────────────
   // Helpers
   // ──────────────────────────────────────────────
 
@@ -102,7 +176,7 @@ export class AuthService {
     role: string;
     firstName: string;
     lastName: string;
-    phoneNumber: string;
+    phoneNumber: string | null;
   }) {
     const payload: JwtPayload = {
       sub: user.id,

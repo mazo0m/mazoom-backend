@@ -95,4 +95,22 @@ export class AuthController {
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
+
+  /**
+   * POST /auth/google
+   * Validates Google credential token, registers/logs in the user and returns a JWT.
+   */
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Login or register with Google',
+    description: 'Validates Google ID Token, creates user if they do not exist, and returns JWT.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful',
+  })
+  googleLogin(@Body('token') token: string) {
+    return this.authService.googleLogin(token);
+  }
 }

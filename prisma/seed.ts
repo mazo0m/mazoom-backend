@@ -214,7 +214,7 @@ async function main() {
       userId: user1.id,
       templateId: template2.id,
       contactEmail: user1.email,
-      contactPhone: user1.phoneNumber,
+      contactPhone: user1.phoneNumber!,
       status: 'APPROVED',
     },
   });
@@ -249,7 +249,7 @@ async function main() {
       userId: user2.id,
       templateId: template1.id,
       contactEmail: user2.email,
-      contactPhone: user2.phoneNumber,
+      contactPhone: user2.phoneNumber!,
       status: 'APPROVED',
     },
   });
@@ -284,7 +284,7 @@ async function main() {
       userId: user3.id,
       templateId: template2.id,
       contactEmail: user3.email,
-      contactPhone: user3.phoneNumber,
+      contactPhone: user3.phoneNumber!,
       status: 'APPROVED',
     },
   });

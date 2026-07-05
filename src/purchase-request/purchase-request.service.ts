@@ -53,6 +53,23 @@ export class PurchaseRequestService {
       },
     });
 
+    // 3. Update User phone number in profile if not already set (e.g. Google auth user)
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (user && (!user.phoneNumber || user.phoneNumber.trim() === '')) {
+      // Check if phone number is already in use by another user to avoid unique constraint error
+      const existingPhoneUser = await this.prisma.user.findFirst({
+        where: { phoneNumber: dto.contactPhone.trim() },
+      });
+      if (!existingPhoneUser) {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: { phoneNumber: dto.contactPhone.trim() },
+        });
+      }
+    }
+
     return request;
   }
 
