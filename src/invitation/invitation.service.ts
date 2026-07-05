@@ -11,7 +11,11 @@ import type { Cache } from 'cache-manager';
 import { RsvpAttendance } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateInvitationDto, UpdateInvitationDto } from './dto';
-import { detectMimeType, MIME_TO_EXT, getImageDimensions } from '../common/utils/file.utils';
+import {
+  detectMimeType,
+  MIME_TO_EXT,
+  getImageDimensions,
+} from '../common/utils/file.utils';
 import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
@@ -20,13 +24,29 @@ import { AbuseService } from '../common/services/abuse.service';
 
 /** Fields from the DTO that map directly to Prisma update data. */
 const UPDATABLE_STRING_FIELDS = [
-  'slug', 'languageMode', 'eventTitle', 'eventTitleAr', 'eventTitleEn',
-  'eventLocation', 'eventLocationAr', 'eventLocationEn',
-  'locationUrl', 'welcomeText', 'welcomeTextAr', 'welcomeTextEn',
-  'musicUrl', 'contactName', 'contactPhone',
+  'slug',
+  'languageMode',
+  'eventTitle',
+  'eventTitleAr',
+  'eventTitleEn',
+  'eventLocation',
+  'eventLocationAr',
+  'eventLocationEn',
+  'locationUrl',
+  'welcomeText',
+  'welcomeTextAr',
+  'welcomeTextEn',
+  'musicUrl',
+  'contactName',
+  'contactPhone',
 ] as const;
 
-const UPDATABLE_ARRAY_FIELDS = ['images', 'eventProgram', 'eventDetails', 'moments'] as const;
+const UPDATABLE_ARRAY_FIELDS = [
+  'images',
+  'eventProgram',
+  'eventDetails',
+  'moments',
+] as const;
 const UPDATABLE_BOOLEAN_FIELDS = ['isActive', 'allowGuestUploads'] as const;
 
 @Injectable()
@@ -186,11 +206,19 @@ export class InvitationService {
   // Get invitation by slug (Public)
   // ──────────────────────────────────────────────
 
-  async findBySlug(slug: string, ip: string, userId?: string, userRole?: string) {
+  async findBySlug(
+    slug: string,
+    ip: string,
+    userId?: string,
+    userRole?: string,
+  ) {
     const bruteforceKey = `slug-bruteforce:${ip}`;
-    const failedAttempts = await this.cacheManager.get<number>(bruteforceKey) || 0;
+    const failedAttempts =
+      (await this.cacheManager.get<number>(bruteforceKey)) || 0;
     if (failedAttempts >= 10) {
-      throw new TooManyRequestsException('Too many failed slug lookups. Please try again later.');
+      throw new TooManyRequestsException(
+        'Too many failed slug lookups. Please try again later.',
+      );
     }
 
     const cacheKey = `invitations:slug:${slug}`;
@@ -228,7 +256,11 @@ export class InvitationService {
       });
 
       if (!invitation) {
-        await this.cacheManager.set(bruteforceKey, failedAttempts + 1, 60 * 1000);
+        await this.cacheManager.set(
+          bruteforceKey,
+          failedAttempts + 1,
+          60 * 1000,
+        );
         await this.cacheManager.set(cacheKey, 'NOT_FOUND', 60 * 1000);
         throw new NotFoundException(`errors.invitation_slug_not_found|${slug}`);
       }
@@ -350,7 +382,9 @@ export class InvitationService {
         const parsedUrl = new URL(url);
         const hostname = parsedUrl.hostname.toLowerCase();
         const allowedDomains = process.env.TRUSTED_CDN_DOMAINS
-          ? process.env.TRUSTED_CDN_DOMAINS.split(',').map((d) => d.trim().toLowerCase())
+          ? process.env.TRUSTED_CDN_DOMAINS.split(',').map((d) =>
+              d.trim().toLowerCase(),
+            )
           : ['cdn.mazoom.app'];
 
         isTrusted = allowedDomains.some(
@@ -369,7 +403,8 @@ export class InvitationService {
 
     // Only invitation owner or admin can manually link external URLs as moments
     const isOwner = userId && invitation.purchase.userId === userId;
-    const isCallerAdmin = userId && await this.isOwnerOrAdmin(userId, invitation.purchase.userId);
+    const isCallerAdmin =
+      userId && (await this.isOwnerOrAdmin(userId, invitation.purchase.userId));
     if (!isOwner && !isCallerAdmin) {
       throw new ForbiddenException('errors.unauthorized_edit');
     }
@@ -428,7 +463,11 @@ export class InvitationService {
   // Secure Guest Upload (Public Endpoint Service)
   // ──────────────────────────────────────────────
 
-  async guestUpload(invitationId: string, file: Express.Multer.File, ip?: string): Promise<{ url: string }> {
+  async guestUpload(
+    invitationId: string,
+    file: Express.Multer.File,
+    ip?: string,
+  ): Promise<{ url: string }> {
     const clientIp = ip || 'unknown';
 
     // 1. Centralized upload rate limiting
@@ -442,7 +481,9 @@ export class InvitationService {
     // 3. Detect and validate MIME type via magic bytes
     const detectedMime = detectMimeType(file.buffer);
     if (!detectedMime || !detectedMime.startsWith('image/')) {
-      throw new BadRequestException('Only images (jpg, png, gif, webp) are allowed for guest uploads');
+      throw new BadRequestException(
+        'Only images (jpg, png, gif, webp) are allowed for guest uploads',
+      );
     }
 
     // 4. Force safe extension
@@ -457,7 +498,9 @@ export class InvitationService {
       throw new BadRequestException('Invalid image structure or corrupt file.');
     }
     if (dimensions.width > 4096 || dimensions.height > 4096) {
-      throw new BadRequestException('Image dimensions must not exceed 4096x4096px.');
+      throw new BadRequestException(
+        'Image dimensions must not exceed 4096x4096px.',
+      );
     }
 
     // 6. Verify invitation exists
@@ -467,7 +510,9 @@ export class InvitationService {
     });
 
     if (!invitation) {
-      throw new NotFoundException(`errors.invitation_not_found|${invitationId}`);
+      throw new NotFoundException(
+        `errors.invitation_not_found|${invitationId}`,
+      );
     }
 
     // 7. Verify invitation status

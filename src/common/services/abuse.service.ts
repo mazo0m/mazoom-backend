@@ -7,9 +7,7 @@ import { TooManyRequestsException } from '../exceptions/too-many-requests.except
 
 @Injectable()
 export class AbuseService {
-  constructor(
-    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-  ) {}
+  constructor(@Inject(CACHE_MANAGER) private readonly cacheManager: Cache) {}
 
   extractIp(req: express.Request): string {
     let ip = '';
@@ -24,9 +22,10 @@ export class AbuseService {
       } else {
         const xForwardedFor = req.headers['x-forwarded-for'];
         if (xForwardedFor) {
-          const ips = typeof xForwardedFor === 'string'
-            ? xForwardedFor.split(',')
-            : xForwardedFor;
+          const ips =
+            typeof xForwardedFor === 'string'
+              ? xForwardedFor.split(',')
+              : xForwardedFor;
           if (ips.length > 0) {
             ip = ips[0].trim();
           }
@@ -58,9 +57,7 @@ export class AbuseService {
       req.headers['sec-fetch-site'] || '',
     ].join('|');
 
-    return createHash('sha256')
-      .update(raw)
-      .digest('hex');
+    return createHash('sha256').update(raw).digest('hex');
   }
 
   async checkLoginBruteForce(email: string, ip: string): Promise<void> {
@@ -69,12 +66,16 @@ export class AbuseService {
 
     const emailFailures = await this.getFailures(emailKey);
     if (emailFailures >= 5) {
-      throw new TooManyRequestsException('Too many failed login attempts. Account locked. Please try again in 15 minutes.');
+      throw new TooManyRequestsException(
+        'Too many failed login attempts. Account locked. Please try again in 15 minutes.',
+      );
     }
 
     const ipFailures = await this.getFailures(ipKey);
     if (ipFailures >= 5) {
-      throw new TooManyRequestsException('Too many failed login attempts from this IP. Please try again in 15 minutes.');
+      throw new TooManyRequestsException(
+        'Too many failed login attempts from this IP. Please try again in 15 minutes.',
+      );
     }
   }
 
@@ -111,18 +112,38 @@ export class AbuseService {
   }
 
   async checkGlobalRateLimit(ip: string): Promise<void> {
-    await this.checkRateLimit(`rate-limit:global:${ip}`, 100, 60 * 1000, 'Too many requests. Please try again later.');
+    await this.checkRateLimit(
+      `rate-limit:global:${ip}`,
+      100,
+      60 * 1000,
+      'Too many requests. Please try again later.',
+    );
   }
 
   async checkRsvpLimit(ip: string, invitationId: string): Promise<void> {
-    await this.checkRateLimit(`rate-limit:rsvp:${ip}:${invitationId}`, 3, 3600 * 1000, 'errors.rsvp_limit_reached|Too many RSVPs submitted. Please try again in an hour.');
+    await this.checkRateLimit(
+      `rate-limit:rsvp:${ip}:${invitationId}`,
+      3,
+      3600 * 1000,
+      'errors.rsvp_limit_reached|Too many RSVPs submitted. Please try again in an hour.',
+    );
   }
 
   async checkUploadLimit(ip: string, invitationId: string): Promise<void> {
-    await this.checkRateLimit(`rate-limit:upload:${ip}:${invitationId}`, 5, 60 * 1000, 'errors.upload_limit_reached|Too many uploads. Please try again in a minute.');
+    await this.checkRateLimit(
+      `rate-limit:upload:${ip}:${invitationId}`,
+      5,
+      60 * 1000,
+      'errors.upload_limit_reached|Too many uploads. Please try again in a minute.',
+    );
   }
 
-  private async checkRateLimit(key: string, limit: number, windowMs: number, errorMessage: string): Promise<void> {
+  private async checkRateLimit(
+    key: string,
+    limit: number,
+    windowMs: number,
+    errorMessage: string,
+  ): Promise<void> {
     const keyv = (this.cacheManager as any).stores?.[0];
     const client = keyv?.opts?.store?.client;
     const now = Date.now();
@@ -130,7 +151,7 @@ export class AbuseService {
     if (client && typeof client.multi === 'function') {
       const clearBefore = now - windowMs;
       const member = `${now}:${Math.random()}`;
-      
+
       const results = await client
         .multi()
         .zAdd(key, { score: now, value: member })
@@ -144,7 +165,7 @@ export class AbuseService {
         throw new TooManyRequestsException(errorMessage);
       }
     } else {
-      let timestamps = await this.cacheManager.get<number[]>(key) || [];
+      let timestamps = (await this.cacheManager.get<number[]>(key)) || [];
       if (!Array.isArray(timestamps)) {
         timestamps = [];
       }

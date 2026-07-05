@@ -34,7 +34,12 @@ export class AuditLogService {
     }
   }
 
-  async logLoginSuccess(userId: string, email: string, ip: string, userAgent: string) {
+  async logLoginSuccess(
+    userId: string,
+    email: string,
+    ip: string,
+    userAgent: string,
+  ) {
     await this.log({
       userId,
       action: 'LOGIN_SUCCESS',
@@ -44,7 +49,12 @@ export class AuditLogService {
     });
   }
 
-  async logLoginFailure(email: string, reason: string, ip: string, userAgent: string) {
+  async logLoginFailure(
+    email: string,
+    reason: string,
+    ip: string,
+    userAgent: string,
+  ) {
     await this.log({
       action: 'LOGIN_FAILURE',
       ip,

@@ -55,7 +55,6 @@ import { HealthModule } from './health/health.module';
       ],
     }),
 
-
     PrismaModule,
     AuthModule,
     TemplateModule,

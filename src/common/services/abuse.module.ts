@@ -8,4 +8,3 @@ import { AuditLogService } from './audit-log.service';
   exports: [AbuseService, AuditLogService],
 })
 export class AbuseModule {}
-

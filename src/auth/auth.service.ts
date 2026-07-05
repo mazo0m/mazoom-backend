@@ -30,7 +30,8 @@ export class AuthService {
     private readonly abuseService: AbuseService,
     private readonly auditLogService: AuditLogService,
   ) {
-    this.googleClientId = this.configService.getOrThrow<string>('GOOGLE_CLIENT_ID');
+    this.googleClientId =
+      this.configService.getOrThrow<string>('GOOGLE_CLIENT_ID');
     this.googleClient = new OAuth2Client(this.googleClientId);
   }
 
@@ -90,14 +91,24 @@ export class AuthService {
 
     if (!user) {
       await this.abuseService.recordLoginFailure(dto.email, ip);
-      await this.auditLogService.logLoginFailure(dto.email, 'User not found', ip, userAgent);
+      await this.auditLogService.logLoginFailure(
+        dto.email,
+        'User not found',
+        ip,
+        userAgent,
+      );
       throw new UnauthorizedException('errors.invalid_credentials');
     }
 
     // 3. Compare password with stored hash
     if (!user.passwordHash) {
       await this.abuseService.recordLoginFailure(dto.email, ip);
-      await this.auditLogService.logLoginFailure(dto.email, 'No password hash set', ip, userAgent);
+      await this.auditLogService.logLoginFailure(
+        dto.email,
+        'No password hash set',
+        ip,
+        userAgent,
+      );
       throw new UnauthorizedException('errors.invalid_credentials');
     }
 
@@ -108,13 +119,23 @@ export class AuthService {
 
     if (!isPasswordValid) {
       await this.abuseService.recordLoginFailure(dto.email, ip);
-      await this.auditLogService.logLoginFailure(dto.email, 'Invalid password', ip, userAgent);
+      await this.auditLogService.logLoginFailure(
+        dto.email,
+        'Invalid password',
+        ip,
+        userAgent,
+      );
       throw new UnauthorizedException('errors.invalid_credentials');
     }
 
     // 4. Check if user is active
     if (!user.isActive) {
-      await this.auditLogService.logLoginFailure(dto.email, 'User deactivated', ip, userAgent);
+      await this.auditLogService.logLoginFailure(
+        dto.email,
+        'User deactivated',
+        ip,
+        userAgent,
+      );
       throw new UnauthorizedException('errors.user_deactivated');
     }
 
@@ -122,7 +143,12 @@ export class AuthService {
     await this.abuseService.resetLoginFailures(dto.email, ip);
 
     // Audit log success
-    await this.auditLogService.logLoginSuccess(user.id, user.email, ip, userAgent);
+    await this.auditLogService.logLoginSuccess(
+      user.id,
+      user.email,
+      ip,
+      userAgent,
+    );
 
     // 6. Return JWT
     return await this.buildTokenResponse(user);
@@ -152,7 +178,9 @@ export class AuthService {
         lastName: payload.family_name || '',
       };
     } catch (error) {
-      this.logger.warn(`Google token verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.logger.warn(
+        `Google token verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
       throw new UnauthorizedException('errors.invalid_google_token');
     }
   }
@@ -190,12 +218,22 @@ export class AuthService {
       } else {
         // Check if user is active
         if (!user.isActive) {
-          await this.auditLogService.logLoginFailure(googleUser.email, 'User deactivated (Google)', ip, userAgent);
+          await this.auditLogService.logLoginFailure(
+            googleUser.email,
+            'User deactivated (Google)',
+            ip,
+            userAgent,
+          );
           throw new UnauthorizedException('errors.user_deactivated');
         }
       }
 
-      await this.auditLogService.logLoginSuccess(user.id, user.email, ip, userAgent);
+      await this.auditLogService.logLoginSuccess(
+        user.id,
+        user.email,
+        ip,
+        userAgent,
+      );
 
       // 4. Return JWT
       return await this.buildTokenResponse(user);
@@ -203,7 +241,12 @@ export class AuthService {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      await this.auditLogService.logLoginFailure('unknown', `Google login failed: ${error instanceof Error ? error.message : 'Unknown error'}`, ip, userAgent);
+      await this.auditLogService.logLoginFailure(
+        'unknown',
+        `Google login failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        ip,
+        userAgent,
+      );
       throw error;
     }
   }
@@ -229,7 +272,7 @@ export class AuthService {
         storedToken.userId,
         tokenHash,
         ip,
-        userAgent
+        userAgent,
       );
 
       throw new UnauthorizedException('errors.refresh_token_reused');
@@ -268,7 +311,7 @@ export class AuthService {
     const payload: JwtPayload = {
       sub: storedToken.user.id,
       email: storedToken.user.email,
-      role: storedToken.user.role as JwtPayload['role'],
+      role: storedToken.user.role,
     };
 
     const accessToken = this.jwtService.sign(payload, {
@@ -309,11 +352,7 @@ export class AuthService {
     });
 
     if (storedToken?.userId) {
-      await this.auditLogService.logLogout(
-        storedToken.userId,
-        ip,
-        userAgent
-      );
+      await this.auditLogService.logLogout(storedToken.userId, ip, userAgent);
     }
   }
 

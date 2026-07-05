@@ -24,8 +24,7 @@ export class UserService {
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly auditLogService: AuditLogService,
-  ) { }
-
+  ) {}
 
   // ──────────────────────────────────────────────
   // Helpers
@@ -143,7 +142,11 @@ export class UserService {
     await this.cacheManager.del(`users:id:${userId}`);
 
     if (dto.password) {
-      await this.auditLogService.logPasswordChange(userId, ip || 'unknown', userAgent || 'unknown');
+      await this.auditLogService.logPasswordChange(
+        userId,
+        ip || 'unknown',
+        userAgent || 'unknown',
+      );
     }
 
     return this.excludePassword(updatedUser);
@@ -230,7 +233,11 @@ export class UserService {
     await this.cacheManager.del(`users:id:${id}`);
 
     if (dto.password) {
-      await this.auditLogService.logPasswordChange(id, ip || 'unknown', userAgent || 'unknown');
+      await this.auditLogService.logPasswordChange(
+        id,
+        ip || 'unknown',
+        userAgent || 'unknown',
+      );
     }
 
     return this.excludePassword(updated);

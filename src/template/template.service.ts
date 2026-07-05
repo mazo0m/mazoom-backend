@@ -9,7 +9,7 @@ export class TemplateService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-  ) { }
+  ) {}
 
   // ──────────────────────────────────────────────
   // Create (Admin only)
@@ -121,4 +121,3 @@ export class TemplateService {
     return updated;
   }
 }
-

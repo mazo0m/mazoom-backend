@@ -33,7 +33,7 @@ async function bootstrap() {
     setHeaders: (res, path) => {
       // 1. Strict Content-Security-Policy to block script execution (even if HTML/SVG is served)
       res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
-      
+
       // 2. Prevent MIME-type sniffing
       res.setHeader('X-Content-Type-Options', 'nosniff');
 
@@ -70,9 +70,9 @@ async function bootstrap() {
   // ── Validation ────────────────────────────────────────────────────
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,          // Strip properties not in the DTO
+      whitelist: true, // Strip properties not in the DTO
       forbidNonWhitelisted: true, // Throw if unknown properties are sent
-      transform: true,          // Auto-transform payloads to DTO instances
+      transform: true, // Auto-transform payloads to DTO instances
     }),
   );
 

@@ -70,14 +70,20 @@ export function detectMimeType(buffer: Buffer): string | null {
   if (buffer[0] === 0x49 && buffer[1] === 0x44 && buffer[2] === 0x33) {
     return 'audio/mpeg';
   }
-  if (buffer[0] === 0xff && (buffer[1] === 0xfb || buffer[1] === 0xf3 || buffer[1] === 0xf2)) {
+  if (
+    buffer[0] === 0xff &&
+    (buffer[1] === 0xfb || buffer[1] === 0xf3 || buffer[1] === 0xf2)
+  ) {
     return 'audio/mpeg';
   }
 
   return null;
 }
 
-export function getImageDimensions(buffer: Buffer, mime: string): { width: number; height: number } | null {
+export function getImageDimensions(
+  buffer: Buffer,
+  mime: string,
+): { width: number; height: number } | null {
   if (!buffer || buffer.length < 24) return null;
 
   try {
@@ -96,7 +102,11 @@ export function getImageDimensions(buffer: Buffer, mime: string): { width: numbe
     if (mime === 'image/jpeg') {
       let i = 2; // skip SOI
       while (i < buffer.length - 8) {
-        if (buffer[i] === 0xff && (buffer[i + 1] >= 0xc0 && buffer[i + 1] <= 0xc3)) {
+        if (
+          buffer[i] === 0xff &&
+          buffer[i + 1] >= 0xc0 &&
+          buffer[i + 1] <= 0xc3
+        ) {
           // Found SOF marker (SOF0, SOF1, SOF2, SOF3)
           const height = buffer.readUInt16BE(i + 5);
           const width = buffer.readUInt16BE(i + 7);

@@ -12,7 +12,6 @@ import {
 import { Type } from 'class-transformer';
 import { TemplateCategory } from '@prisma/client';
 
-
 export class CreateTemplateDto {
   @ApiProperty({
     description: 'Display title of the invitation template',

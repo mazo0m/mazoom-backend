@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, Inject, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Inject,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { PrismaService } from '../prisma/prisma.service';
@@ -12,7 +18,7 @@ export class RsvpService {
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly abuseService: AbuseService,
-  ) { }
+  ) {}
 
   // ──────────────────────────────────────────────
   // Submit RSVP (Public — any guest)
@@ -29,9 +35,9 @@ export class RsvpService {
     const payloadHash = createHash('sha256')
       .update(`${dto.invitationId}:${nameNorm}:${dto.attendance}`)
       .digest('hex');
-    
-    const lockKey = idempotencyKey 
-      ? `idempotency:header:${idempotencyKey}` 
+
+    const lockKey = idempotencyKey
+      ? `idempotency:header:${idempotencyKey}`
       : `idempotency:payload:${payloadHash}`;
     const lockTtl = idempotencyKey ? 3600 * 1000 : 10 * 1000; // 1 hour for header, 10s for double clicks
 
@@ -44,7 +50,9 @@ export class RsvpService {
     // 3. Spam message check
     if (dto.message) {
       if (/<[^>]*>/g.test(dto.message)) {
-        throw new BadRequestException('Spam detected: HTML tags are not allowed.');
+        throw new BadRequestException(
+          'Spam detected: HTML tags are not allowed.',
+        );
       }
       const urlRegex = /https?:\/\/[^\s]+/gi;
       const urls = dto.message.match(urlRegex);
@@ -52,7 +60,9 @@ export class RsvpService {
         throw new BadRequestException('Spam detected: too many links.');
       }
       if (/(.)\1{9,}/.test(dto.message)) {
-        throw new BadRequestException('Spam detected: repetitive character sequences.');
+        throw new BadRequestException(
+          'Spam detected: repetitive character sequences.',
+        );
       }
     }
 
@@ -98,4 +108,3 @@ export class RsvpService {
     return rsvp;
   }
 }
-

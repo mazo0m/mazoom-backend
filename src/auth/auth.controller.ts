@@ -1,4 +1,12 @@
-import { Body, Controller, Post, HttpCode, HttpStatus, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  HttpCode,
+  HttpStatus,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import * as express from 'express';
@@ -159,7 +167,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Login or register with Google',
-    description: 'Validates Google ID Token, creates user if they do not exist, and returns JWT.',
+    description:
+      'Validates Google ID Token, creates user if they do not exist, and returns JWT.',
   })
   @ApiResponse({
     status: 200,
@@ -189,7 +198,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Refresh access token',
-    description: 'Validates the HTTP-only refresh token, rotates it, and returns a new short-lived access token.',
+    description:
+      'Validates the HTTP-only refresh token, rotates it, and returns a new short-lived access token.',
   })
   @ApiResponse({
     status: 200,
@@ -226,7 +236,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Logout user',
-    description: 'Clears the refresh token cookie and invalidates the session in the database.',
+    description:
+      'Clears the refresh token cookie and invalidates the session in the database.',
   })
   @ApiResponse({
     status: 200,

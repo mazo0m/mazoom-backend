@@ -28,12 +28,7 @@ import { AuditLogService } from '../common/services/audit-log.service';
 
   controllers: [AuthController],
 
-  providers: [
-    AuthService,
-    JwtStrategy,
-    AbuseService,
-    AuditLogService,
-  ],
+  providers: [AuthService, JwtStrategy, AbuseService, AuditLogService],
 
   exports: [AuthService, JwtModule, PassportModule],
 })
