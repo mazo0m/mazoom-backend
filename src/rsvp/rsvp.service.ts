@@ -1,22 +1,62 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, BadRequestException, ConflictException } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRsvpDto } from './dto';
+import { AbuseService } from '../common/services/abuse.service';
+import { createHash } from 'crypto';
 
 @Injectable()
 export class RsvpService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly abuseService: AbuseService,
   ) { }
 
   // ──────────────────────────────────────────────
   // Submit RSVP (Public — any guest)
   // ──────────────────────────────────────────────
 
-  async create(dto: CreateRsvpDto) {
-    // 1. Verify the invitation exists
+  async create(dto: CreateRsvpDto, ip?: string, idempotencyKey?: string) {
+    const clientIp = ip || 'unknown';
+
+    // 1. Redis atomic rate limiting via AbuseService
+    await this.abuseService.checkRsvpLimit(clientIp, dto.invitationId);
+
+    // 2. Idempotency protection to prevent duplicate submissions
+    const nameNorm = (dto.name || '').trim();
+    const payloadHash = createHash('sha256')
+      .update(`${dto.invitationId}:${nameNorm}:${dto.attendance}`)
+      .digest('hex');
+    
+    const lockKey = idempotencyKey 
+      ? `idempotency:header:${idempotencyKey}` 
+      : `idempotency:payload:${payloadHash}`;
+    const lockTtl = idempotencyKey ? 3600 * 1000 : 10 * 1000; // 1 hour for header, 10s for double clicks
+
+    const isLocked = await this.cacheManager.get(lockKey);
+    if (isLocked) {
+      throw new ConflictException('Duplicate submission detected.');
+    }
+    await this.cacheManager.set(lockKey, '1', lockTtl);
+
+    // 3. Spam message check
+    if (dto.message) {
+      if (/<[^>]*>/g.test(dto.message)) {
+        throw new BadRequestException('Spam detected: HTML tags are not allowed.');
+      }
+      const urlRegex = /https?:\/\/[^\s]+/gi;
+      const urls = dto.message.match(urlRegex);
+      if (urls && urls.length > 1) {
+        throw new BadRequestException('Spam detected: too many links.');
+      }
+      if (/(.)\1{9,}/.test(dto.message)) {
+        throw new BadRequestException('Spam detected: repetitive character sequences.');
+      }
+    }
+
+    // 4. Verify the invitation exists
     const invitation = await this.prisma.invitation.findUnique({
       where: { id: dto.invitationId },
     });
@@ -27,11 +67,25 @@ export class RsvpService {
       );
     }
 
-    // 2. Create the RSVP entry
+    // 5. Block duplicate RSVP submissions (same name + invitationId)
+    const existingRsvp = await this.prisma.rSVP.findFirst({
+      where: {
+        invitationId: dto.invitationId,
+        name: nameNorm,
+      },
+    });
+
+    if (existingRsvp) {
+      throw new BadRequestException(
+        `errors.rsvp_duplicate|An RSVP with the name "${dto.name}" has already been submitted for this invitation.`,
+      );
+    }
+
+    // 6. Create the RSVP entry
     const rsvp = await this.prisma.rSVP.create({
       data: {
         invitationId: dto.invitationId,
-        name: dto.name,
+        name: nameNorm,
         attendance: dto.attendance,
         guestsCount: dto.guestsCount,
         message: dto.message,

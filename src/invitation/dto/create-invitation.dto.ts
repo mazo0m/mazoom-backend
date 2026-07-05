@@ -10,7 +10,36 @@ import {
   IsUUID,
   Matches,
   MaxLength,
+  ArrayMaxSize,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class EventProgramItemDto {
+  [key: string]: any;
+
+  @ApiProperty({ description: 'Time of the program item', example: '8:00 م' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50, { message: 'Program item time must not exceed 50 characters' })
+  time: string;
+
+  @ApiProperty({ description: 'Title/Description of the program item', example: 'الاستقبال' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(150, { message: 'Program item title must not exceed 150 characters' })
+  title: string;
+}
+
+export class EventDetailsItemDto {
+  [key: string]: any;
+
+  @ApiProperty({ description: 'Event detail rule or guideline text', example: 'الدخول عبر رمز QR فقط' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(300, { message: 'Event detail text must not exceed 300 characters' })
+  text: string;
+}
 
 export class CreateInvitationDto {
   @ApiProperty({
@@ -68,6 +97,7 @@ export class CreateInvitationDto {
   })
   @IsOptional()
   @IsUrl({}, { message: 'locationUrl must be a valid URL' })
+  @MaxLength(500, { message: 'Location URL must not exceed 500 characters' })
   locationUrl?: string;
 
   @ApiPropertyOptional({
@@ -76,6 +106,7 @@ export class CreateInvitationDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(1000, { message: 'Welcome text must not exceed 1000 characters' })
   welcomeText?: string;
 
   @ApiPropertyOptional({
@@ -88,7 +119,9 @@ export class CreateInvitationDto {
   })
   @IsOptional()
   @IsArray({ message: 'images must be an array of URLs' })
+  @ArrayMaxSize(20, { message: 'Gallery images list cannot exceed 20 items' })
   @IsUrl({}, { each: true, message: 'Each image must be a valid URL' })
+  @MaxLength(500, { each: true, message: 'Image URLs must not exceed 500 characters' })
   images?: string[];
 
   @ApiPropertyOptional({
@@ -97,28 +130,30 @@ export class CreateInvitationDto {
   })
   @IsOptional()
   @IsUrl({}, { message: 'musicUrl must be a valid URL' })
+  @MaxLength(500, { message: 'Music URL must not exceed 500 characters' })
   musicUrl?: string;
 
   @ApiPropertyOptional({
     description: 'Array of event program / timeline items',
-    example: [
-      { time: '8:00 م', title: 'الاستقبال' },
-      { time: '9:00 م', title: 'العشاء' },
-    ],
-    type: 'array',
+    type: [EventProgramItemDto],
   })
   @IsOptional()
   @IsArray({ message: 'eventProgram must be an array' })
-  eventProgram?: { time: string; title: string }[];
+  @ArrayMaxSize(30, { message: 'eventProgram cannot exceed 30 items' })
+  @ValidateNested({ each: true })
+  @Type(() => EventProgramItemDto)
+  eventProgram?: EventProgramItemDto[];
 
   @ApiPropertyOptional({
     description: 'Array of event detail / guideline items',
-    example: [{ text: 'الدخول عبر رمز QR فقط' }, { text: 'يرجى تأكيد الحضور' }],
-    type: 'array',
+    type: [EventDetailsItemDto],
   })
   @IsOptional()
   @IsArray({ message: 'eventDetails must be an array' })
-  eventDetails?: { text: string }[];
+  @ArrayMaxSize(30, { message: 'eventDetails cannot exceed 30 items' })
+  @ValidateNested({ each: true })
+  @Type(() => EventDetailsItemDto)
+  eventDetails?: EventDetailsItemDto[];
 
   @ApiPropertyOptional({
     description: 'The language configuration chosen by the client',
@@ -127,6 +162,7 @@ export class CreateInvitationDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(20, { message: 'Language mode must not exceed 20 characters' })
   languageMode?: string;
 
   @ApiPropertyOptional({
@@ -135,6 +171,7 @@ export class CreateInvitationDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(200, { message: 'Arabic event title must not exceed 200 characters' })
   eventTitleAr?: string;
 
   @ApiPropertyOptional({
@@ -143,6 +180,7 @@ export class CreateInvitationDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(200, { message: 'English event title must not exceed 200 characters' })
   eventTitleEn?: string;
 
   @ApiPropertyOptional({
@@ -151,6 +189,7 @@ export class CreateInvitationDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(300, { message: 'Arabic event location must not exceed 300 characters' })
   eventLocationAr?: string;
 
   @ApiPropertyOptional({
@@ -159,6 +198,7 @@ export class CreateInvitationDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(300, { message: 'English event location must not exceed 300 characters' })
   eventLocationEn?: string;
 
   @ApiPropertyOptional({
@@ -167,6 +207,7 @@ export class CreateInvitationDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(1000, { message: 'Arabic welcome text must not exceed 1000 characters' })
   welcomeTextAr?: string;
 
   @ApiPropertyOptional({
@@ -175,6 +216,7 @@ export class CreateInvitationDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(1000, { message: 'English welcome text must not exceed 1000 characters' })
   welcomeTextEn?: string;
 
   @ApiPropertyOptional({
@@ -183,6 +225,7 @@ export class CreateInvitationDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(100, { message: 'Contact name must not exceed 100 characters' })
   contactName?: string;
 
   @ApiPropertyOptional({
@@ -191,6 +234,7 @@ export class CreateInvitationDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(20, { message: 'Contact phone must not exceed 20 characters' })
   contactPhone?: string;
 
   @ApiPropertyOptional({
@@ -208,6 +252,8 @@ export class CreateInvitationDto {
   })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(100, { message: 'Moments photo list cannot exceed 100 items' })
   @IsString({ each: true })
+  @MaxLength(500, { each: true, message: 'Moment URLs must not exceed 500 characters' })
   moments?: string[];
 }

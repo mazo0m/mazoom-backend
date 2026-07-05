@@ -1,13 +1,18 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Req } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import * as express from 'express';
 import { RsvpService } from './rsvp.service';
 import { CreateRsvpDto } from './dto';
+import { AbuseService } from '../common/services/abuse.service';
 
 @ApiTags('RSVPs')
 @Controller('rsvp')
 export class RsvpController {
-  constructor(private readonly rsvpService: RsvpService) {}
+  constructor(
+    private readonly rsvpService: RsvpService,
+    private readonly abuseService: AbuseService,
+  ) {}
 
   /**
    * POST /rsvp
@@ -51,7 +56,9 @@ export class RsvpController {
     status: 400,
     description: 'Validation failed — invalid input data',
   })
-  create(@Body() dto: CreateRsvpDto) {
-    return this.rsvpService.create(dto);
+  create(@Body() dto: CreateRsvpDto, @Req() req: express.Request) {
+    const ip = this.abuseService.extractIp(req);
+    const idempotencyKey = req.headers['x-idempotency-key']?.toString();
+    return this.rsvpService.create(dto, ip, idempotencyKey);
   }
 }
