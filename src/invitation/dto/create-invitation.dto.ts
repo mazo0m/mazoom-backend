@@ -24,31 +24,75 @@ export class EventProgramItemDto {
   @MaxLength(50, { message: 'Program item time must not exceed 50 characters' })
   time: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Title/Description of the program item',
     example: 'الاستقبال',
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(150, {
     message: 'Program item title must not exceed 150 characters',
   })
-  title: string;
+  title?: string;
+
+  @ApiPropertyOptional({
+    description: 'Arabic title of the program item',
+    example: 'الاستقبال',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(150, {
+    message: 'Program item Arabic title must not exceed 150 characters',
+  })
+  titleAr?: string;
+
+  @ApiPropertyOptional({
+    description: 'English title of the program item',
+    example: 'Reception',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(150, {
+    message: 'Program item English title must not exceed 150 characters',
+  })
+  titleEn?: string;
 }
 
 export class EventDetailsItemDto {
   [key: string]: any;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Event detail rule or guideline text',
     example: 'الدخول عبر رمز QR فقط',
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(300, {
     message: 'Event detail text must not exceed 300 characters',
   })
-  text: string;
+  text?: string;
+
+  @ApiPropertyOptional({
+    description: 'Arabic event detail rule or guideline text',
+    example: 'الدخول عبر رمز QR فقط',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(300, {
+    message: 'Arabic event detail text must not exceed 300 characters',
+  })
+  textAr?: string;
+
+  @ApiPropertyOptional({
+    description: 'English event detail rule or guideline text',
+    example: 'Entry via QR code only',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(300, {
+    message: 'English event detail text must not exceed 300 characters',
+  })
+  textEn?: string;
 }
 
 export class CreateInvitationDto {

@@ -35,6 +35,15 @@ export class TestimonialService {
       throw new BadRequestException('errors.unauthorized_request');
     }
 
+    // Check if review has been soft-deleted (deleted by admin)
+    const existingTestimonial = await this.prisma.testimonial.findUnique({
+      where: { purchaseId: dto.purchaseId },
+    });
+
+    if (existingTestimonial && existingTestimonial.isDeleted) {
+      throw new BadRequestException('errors.review_disabled|This review was deleted by an admin and cannot be recreated.');
+    }
+
     // 2. Create or update testimonial
     const result = await this.prisma.testimonial.upsert({
       where: { purchaseId: dto.purchaseId },
@@ -64,6 +73,7 @@ export class TestimonialService {
     if (cached) return cached;
 
     const testimonials = await this.prisma.testimonial.findMany({
+      where: { isDeleted: false },
       include: {
         purchase: {
           include: {
@@ -127,5 +137,62 @@ export class TestimonialService {
     await this.cacheManager.set(cacheKey, mapped, 1800000);
 
     return mapped;
+  }
+
+  // ──────────────────────────────────────────────
+  // Get all Testimonials (Admin only)
+  // ──────────────────────────────────────────────
+  async findAllAdmin() {
+    return this.prisma.testimonial.findMany({
+      where: { isDeleted: false },
+      include: {
+        purchase: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phoneNumber: true,
+              },
+            },
+            template: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // ──────────────────────────────────────────────
+  // Delete Testimonial (Admin only)
+  // ──────────────────────────────────────────────
+  async remove(id: string) {
+    const testimonial = await this.prisma.testimonial.findUnique({
+      where: { id },
+    });
+
+    if (!testimonial) {
+      throw new NotFoundException(`errors.testimonial_not_found|${id}`);
+    }
+
+    await this.prisma.testimonial.update({
+      where: { id },
+      data: { 
+        isDeleted: true,
+        comment: 'Your review has been deleted by an admin.',
+      },
+    });
+
+    // Invalidate public landing page testimonials cache
+    await this.cacheManager.del('testimonials:all');
+
+    return { success: true };
   }
 }
