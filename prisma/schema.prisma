@@ -205,12 +205,14 @@ model Testimonial {
   purchaseId String   @unique @map("purchase_id") @db.Uuid
   rating     Int
   comment    String   @db.Text
+  isDeleted  Boolean  @default(false) @map("is_deleted")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   // Relations
   purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
 
+  @@index([isDeleted])
   @@map("testimonials")
 }
 
