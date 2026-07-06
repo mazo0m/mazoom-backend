@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -61,5 +61,40 @@ export class TestimonialController {
   @ApiResponse({ status: 200, description: 'List of testimonials' })
   findAll() {
     return this.testimonialService.findAll();
+  }
+
+  /**
+   * GET /testimonials/admin
+   * Get all testimonials for admin management. Admin only.
+   */
+  @Get('admin')
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get all testimonials for admin',
+    description: 'Returns all testimonials with full user and template details. Requires ADMIN role.',
+  })
+  @ApiResponse({ status: 200, description: 'List of testimonials' })
+  findAllAdmin() {
+    return this.testimonialService.findAllAdmin();
+  }
+
+  /**
+   * DELETE /testimonials/:id
+   * Delete a testimonial by ID. Admin only.
+   */
+  @Delete(':id')
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Delete a testimonial (Admin)',
+    description: 'Deletes a client testimonial. Requires ADMIN role.',
+  })
+  @ApiResponse({ status: 200, description: 'Testimonial deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Testimonial not found' })
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.testimonialService.remove(id);
   }
 }

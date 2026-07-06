@@ -6,6 +6,7 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -121,8 +122,8 @@ export class TemplateController {
       ],
     },
   })
-  findAll() {
-    return this.templateService.findAll();
+  findAll(@Query('includeInactive') includeInactive?: string) {
+    return this.templateService.findAll(includeInactive === 'true');
   }
 
   /**

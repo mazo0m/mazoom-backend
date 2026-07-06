@@ -34,8 +34,9 @@ export class TemplateService {
       },
     });
 
-    // Invalidate templates list cache
+    // Invalidate templates list caches
     await this.cacheManager.del('templates:all');
+    await this.cacheManager.del('templates:active');
 
     return template;
   }
@@ -44,12 +45,13 @@ export class TemplateService {
   // List all (Public)
   // ──────────────────────────────────────────────
 
-  async findAll() {
-    const cacheKey = 'templates:all';
+  async findAll(includeInactive = false) {
+    const cacheKey = includeInactive ? 'templates:all' : 'templates:active';
     const cached = await this.cacheManager.get<any[]>(cacheKey);
     if (cached) return cached;
 
     const templates = await this.prisma.template.findMany({
+      where: includeInactive ? {} : { isActive: true },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -116,6 +118,7 @@ export class TemplateService {
 
     // Invalidate caches
     await this.cacheManager.del('templates:all');
+    await this.cacheManager.del('templates:active');
     await this.cacheManager.del(`templates:id:${id}`);
 
     return updated;

@@ -128,4 +128,56 @@ export class TestimonialService {
 
     return mapped;
   }
+
+  // ──────────────────────────────────────────────
+  // Get all Testimonials (Admin only)
+  // ──────────────────────────────────────────────
+  async findAllAdmin() {
+    return this.prisma.testimonial.findMany({
+      include: {
+        purchase: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phoneNumber: true,
+              },
+            },
+            template: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // ──────────────────────────────────────────────
+  // Delete Testimonial (Admin only)
+  // ──────────────────────────────────────────────
+  async remove(id: string) {
+    const testimonial = await this.prisma.testimonial.findUnique({
+      where: { id },
+    });
+
+    if (!testimonial) {
+      throw new NotFoundException(`errors.testimonial_not_found|${id}`);
+    }
+
+    await this.prisma.testimonial.delete({
+      where: { id },
+    });
+
+    // Invalidate public landing page testimonials cache
+    await this.cacheManager.del('testimonials:all');
+
+    return { success: true };
+  }
 }
