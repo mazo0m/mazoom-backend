@@ -19,6 +19,7 @@ export class PurchaseService {
             title: true,
             previewImage: true,
             price: true,
+            editableFields: true,
           },
         },
         invitation: {
@@ -75,6 +76,7 @@ export class PurchaseService {
             title: true,
             previewImage: true,
             price: true,
+            editableFields: true,
           },
         },
         invitation: true,

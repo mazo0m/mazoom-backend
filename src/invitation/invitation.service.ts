@@ -583,6 +583,7 @@ export class InvitationService {
       userId: purchase?.userId,
       templateId: purchase?.templateId,
       template: purchase?.template,
+      purchaseId: purchase?.id,
       wishes: rsvps
         ? rsvps
             .filter((r: any) => r.message && r.message.trim() !== '')

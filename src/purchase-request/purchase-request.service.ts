@@ -125,13 +125,7 @@ export class PurchaseRequestService {
         },
         purchase: {
           include: {
-            invitation: {
-              select: {
-                id: true,
-                slug: true,
-                isActive: true,
-              },
-            },
+            invitation: true,
           },
         },
       },
