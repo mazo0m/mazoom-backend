@@ -57,8 +57,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       const exceptionResponse = exception.getResponse() as
-        | string
-        | NestErrorResponse;
+        string | NestErrorResponse;
 
       if (typeof exceptionResponse === 'string') {
         responseMessage = this.translateMessage(exceptionResponse, lang);
@@ -83,9 +82,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     } else {
       // For non-HTTP exceptions, never expose internals to the client
       responseMessage =
-        lang === 'en'
-          ? 'An unexpected error occurred'
-          : 'حدث خطأ غير متوقع';
+        lang === 'en' ? 'An unexpected error occurred' : 'حدث خطأ غير متوقع';
       errorType = 'Internal Server Error';
     }
 

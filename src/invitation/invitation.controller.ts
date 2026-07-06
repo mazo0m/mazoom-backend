@@ -8,7 +8,12 @@ import {
   Put,
   Post,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+  Req,
 } from '@nestjs/common';
+import * as express from 'express';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -16,10 +21,14 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { Throttle } from '@nestjs/throttler';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard, OptionalJwtAuthGuard, RolesGuard } from '../auth/guards';
 import { Roles, GetUser } from '../auth/decorators';
 import { InvitationService } from './invitation.service';
+import { AbuseService } from '../common/services/abuse.service';
 import {
   CreateInvitationDto,
   UpdateInvitationDto,
@@ -30,7 +39,10 @@ import {
 @ApiTags('Invitations')
 @Controller('invitations')
 export class InvitationController {
-  constructor(private readonly invitationService: InvitationService) {}
+  constructor(
+    private readonly invitationService: InvitationService,
+    private readonly abuseService: AbuseService,
+  ) {}
 
   /**
    * POST /invitations
@@ -171,6 +183,43 @@ export class InvitationController {
   }
 
   /**
+   * POST /invitations/:id/guest-upload
+   * Public endpoint — allows anonymous guests to upload images to invitation moments.
+   * Rate limited to prevent upload spam and DDoS vectors.
+   */
+  @Throttle({ default: { ttl: 60000, limit: 3 } }) // Limit to 3 files per minute per IP
+  @Post(':id/guest-upload')
+  @ApiOperation({
+    summary: 'Upload an image as a guest (no auth required)',
+    description:
+      'Allows anonymous guests to upload photos/moments if permitted by the invitation configuration.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID of the invitation',
+    example: 'e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b',
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB size limit
+      },
+    }),
+  )
+  async guestUpload(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: express.Request,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+    const ip = this.abuseService.extractIp(req);
+    return this.invitationService.guestUpload(id, file, ip);
+  }
+
+  /**
    * GET /invitations/slug/:slug
    * Public endpoint — used by the frontend to fetch invitation data
    * when a guest opens a shareable link (e.g. mazoom.com/invite/ahmed-wedding).
@@ -218,10 +267,12 @@ export class InvitationController {
   @ApiResponse({ status: 404, description: 'Invitation not found' })
   findBySlug(
     @Param('slug') slug: string,
+    @Req() req: express.Request,
     @GetUser('id') userId?: string,
-    @GetUser('role') userRole?: string,
+    @GetUser('role') role?: Role,
   ) {
-    return this.invitationService.findBySlug(slug, userId, userRole);
+    const ip = this.abuseService.extractIp(req);
+    return this.invitationService.findBySlug(slug, ip, userId, role);
   }
 
   /**

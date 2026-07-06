@@ -4,6 +4,8 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 import { APP_GUARD } from '@nestjs/core';
+import { AbuseGuard } from './common/guards/abuse.guard';
+import { AbuseModule } from './common/services/abuse.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -22,6 +24,7 @@ import { HealthModule } from './health/health.module';
   imports: [
     // Load .env variables globally
     ConfigModule.forRoot({ isGlobal: true }),
+    AbuseModule,
 
     // Global Cache — uses Redis if REDIS_URL is configured, falls back to memory
     CacheModule.registerAsync({
@@ -52,7 +55,6 @@ import { HealthModule } from './health/health.module';
       ],
     }),
 
-
     PrismaModule,
     AuthModule,
     TemplateModule,
@@ -68,7 +70,14 @@ import { HealthModule } from './health/health.module';
   controllers: [AppController],
   providers: [
     AppService,
-    // Apply ThrottlerGuard globally to all routes
+
+    // 1. Abuse first (block bots early)
+    {
+      provide: APP_GUARD,
+      useClass: AbuseGuard,
+    },
+
+    // 2. Throttler second
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

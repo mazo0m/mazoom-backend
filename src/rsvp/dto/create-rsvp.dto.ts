@@ -7,6 +7,8 @@ import {
   IsString,
   IsUUID,
   Min,
+  MinLength,
+  MaxLength,
 } from 'class-validator';
 import { RsvpAttendance } from '@prisma/client';
 
@@ -26,6 +28,8 @@ export class CreateRsvpDto {
   })
   @IsString()
   @IsNotEmpty({ message: 'Guest name is required' })
+  @MinLength(2, { message: 'Guest name must be at least 2 characters long' })
+  @MaxLength(100, { message: 'Guest name must not exceed 100 characters' })
   name: string;
 
   @ApiProperty({
@@ -54,5 +58,6 @@ export class CreateRsvpDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(1000, { message: 'Message must not exceed 1000 characters' })
   message?: string;
 }

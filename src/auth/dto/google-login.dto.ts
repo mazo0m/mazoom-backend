@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
 export class GoogleLoginDto {
   @ApiProperty({
@@ -8,5 +8,6 @@ export class GoogleLoginDto {
   })
   @IsString({ message: 'Token must be a string' })
   @IsNotEmpty({ message: 'Google token is required' })
+  @MaxLength(4000, { message: 'Token must not exceed 4000 characters' })
   token: string;
 }

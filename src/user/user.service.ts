@@ -11,6 +11,7 @@ import { User, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { CreateUserDto, UpdateUserByAdminDto } from './dto/admin-user.dto';
+import { AuditLogService } from '../common/services/audit-log.service';
 
 /** User fields safe to return in API responses (excludes passwordHash). */
 type SafeUser = Omit<User, 'passwordHash'>;
@@ -22,8 +23,8 @@ export class UserService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-  ) { }
-
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   // ──────────────────────────────────────────────
   // Helpers
@@ -100,7 +101,12 @@ export class UserService {
   /**
    * Update profile fields of the user. Checks for duplicates on email/phone.
    */
-  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<SafeUser> {
+  async updateProfile(
+    userId: string,
+    dto: UpdateProfileDto,
+    ip?: string,
+    userAgent?: string,
+  ): Promise<SafeUser> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -134,6 +140,14 @@ export class UserService {
     });
 
     await this.cacheManager.del(`users:id:${userId}`);
+
+    if (dto.password) {
+      await this.auditLogService.logPasswordChange(
+        userId,
+        ip || 'unknown',
+        userAgent || 'unknown',
+      );
+    }
 
     return this.excludePassword(updatedUser);
   }
@@ -178,7 +192,12 @@ export class UserService {
   /**
    * Update details/role of a user by ID (Admin only).
    */
-  async updateUserByAdmin(id: string, dto: UpdateUserByAdminDto): Promise<SafeUser> {
+  async updateUserByAdmin(
+    id: string,
+    dto: UpdateUserByAdminDto,
+    ip?: string,
+    userAgent?: string,
+  ): Promise<SafeUser> {
     const user = await this.prisma.user.findUnique({
       where: { id },
     });
@@ -212,6 +231,14 @@ export class UserService {
     });
 
     await this.cacheManager.del(`users:id:${id}`);
+
+    if (dto.password) {
+      await this.auditLogService.logPasswordChange(
+        id,
+        ip || 'unknown',
+        userAgent || 'unknown',
+      );
+    }
 
     return this.excludePassword(updated);
   }

@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException, Inject } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  Inject,
+} from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,7 +14,7 @@ export class TestimonialService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-  ) { }
+  ) {}
 
   // ──────────────────────────────────────────────
   // Create or Update Testimonial (Client only)
@@ -21,7 +26,9 @@ export class TestimonialService {
     });
 
     if (!purchase) {
-      throw new NotFoundException(`errors.purchase_not_found|${dto.purchaseId}`);
+      throw new NotFoundException(
+        `errors.purchase_not_found|${dto.purchaseId}`,
+      );
     }
 
     if (purchase.userId !== userId) {
@@ -122,4 +129,3 @@ export class TestimonialService {
     return mapped;
   }
 }
-

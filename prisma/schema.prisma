@@ -216,16 +216,39 @@ model Testimonial {
 
 /// Refresh tokens for tracking user sessions and token rotation.
 model RefreshToken {
-  id        String   @id @default(uuid()) @db.Uuid
-  tokenHash String   @unique @map("token_hash")
-  userId    String   @map("user_id") @db.Uuid
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  isRevoked Boolean  @default(false) @map("is_revoked")
+  id           String   @id @default(uuid()) @db.Uuid
+  tokenHash    String   @unique @map("token_hash")
+  userId       String   @map("user_id") @db.Uuid
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  isRevoked    Boolean  @default(false) @map("is_revoked")
 
+  revokedAt    DateTime? @map("revoked_at")
+  revokedReason String?  @map("revoked_reason")
+  replacedBy   String?   @map("replaced_by")
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("refresh_tokens")
 }
+
+/// Durable audit logs for tracking security-sensitive actions.
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  action    String
+  ip        String?
+  userAgent String?  @map("user_agent")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}
+
+enum RefreshTokenRevokeReason {
+  ROTATED
+  LOGOUT
+  REUSE_ATTEMPT
+}
+
