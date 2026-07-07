@@ -66,6 +66,7 @@ export class InvitationService {
             id: true,
             title: true,
             previewImage: true,
+            editableFields: true,
           },
         },
       },

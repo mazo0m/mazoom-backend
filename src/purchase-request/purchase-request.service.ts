@@ -121,6 +121,7 @@ export class PurchaseRequestService {
             title: true,
             previewImage: true,
             price: true,
+            editableFields: true,
           },
         },
         purchase: {
