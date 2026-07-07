@@ -14,6 +14,14 @@ import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, GoogleLoginDto } from './dto';
 import { AbuseService } from '../common/services/abuse.service';
 
+/** Shared cookie configuration for access tokens. */
+const ACCESS_TOKEN_COOKIE_OPTIONS: express.CookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax',
+  maxAge: 15 * 60 * 1000, // 15 minutes
+};
+
 /** Shared cookie configuration for refresh tokens. */
 const REFRESH_TOKEN_COOKIE_OPTIONS: express.CookieOptions = {
   httpOnly: true,
@@ -35,8 +43,17 @@ export class AuthController {
   // ──────────────────────────────────────────────
 
   /**
+   * Sets the access token as an HTTP-only cookie on the response.
+   */
+  private setAccessTokenCookie(
+    response: express.Response,
+    accessToken: string,
+  ): void {
+    response.cookie('accessToken', accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
+  }
+
+  /**
    * Sets the refresh token as an HTTP-only cookie on the response.
-   * Extracted to avoid duplicating cookie config across every auth endpoint.
    */
   private setRefreshTokenCookie(
     response: express.Response,
@@ -65,7 +82,6 @@ export class AuthController {
     description: 'Account created successfully',
     schema: {
       example: {
-        accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
         user: {
           id: 'c3a1e1d0-4f6a-4b2c-9e8f-1a2b3c4d5e6f',
           email: 'ahmed@mazoom.app',
@@ -97,9 +113,9 @@ export class AuthController {
     @Res({ passthrough: true }) response: express.Response,
   ) {
     const result = await this.authService.register(dto);
+    this.setAccessTokenCookie(response, result.accessToken);
     this.setRefreshTokenCookie(response, result.refreshToken);
     return {
-      accessToken: result.accessToken,
       user: result.user,
     };
   }
@@ -120,7 +136,6 @@ export class AuthController {
     description: 'Login successful',
     schema: {
       example: {
-        accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
         user: {
           id: 'c3a1e1d0-4f6a-4b2c-9e8f-1a2b3c4d5e6f',
           email: 'ahmed@mazoom.app',
@@ -151,9 +166,9 @@ export class AuthController {
     const ip = this.abuseService.extractIp(request);
     const userAgent = request.headers['user-agent'] || '';
     const result = await this.authService.login(dto, ip, userAgent);
+    this.setAccessTokenCookie(response, result.accessToken);
     this.setRefreshTokenCookie(response, result.refreshToken);
     return {
-      accessToken: result.accessToken,
       user: result.user,
     };
   }
@@ -182,9 +197,9 @@ export class AuthController {
     const ip = this.abuseService.extractIp(request);
     const userAgent = request.headers['user-agent'] || '';
     const result = await this.authService.googleLogin(dto.token, ip, userAgent);
+    this.setAccessTokenCookie(response, result.accessToken);
     this.setRefreshTokenCookie(response, result.refreshToken);
     return {
-      accessToken: result.accessToken,
       user: result.user,
     };
   }
@@ -204,11 +219,6 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Access token refreshed successfully',
-    schema: {
-      example: {
-        accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-      },
-    },
   })
   @ApiResponse({
     status: 401,
@@ -222,9 +232,10 @@ export class AuthController {
     const ip = this.abuseService.extractIp(request);
     const userAgent = request.headers['user-agent'] || '';
     const result = await this.authService.refresh(refreshToken, ip, userAgent);
+    this.setAccessTokenCookie(response, result.accessToken);
     this.setRefreshTokenCookie(response, result.refreshToken);
     return {
-      accessToken: result.accessToken,
+      user: result.user,
     };
   }
 
@@ -252,9 +263,15 @@ export class AuthController {
     const userAgent = request.headers['user-agent'] || '';
     await this.authService.logout(refreshToken, ip, userAgent);
 
+    response.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+
     response.clearCookie('refreshToken', {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
     });
 
