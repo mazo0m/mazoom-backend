@@ -65,6 +65,8 @@ export class InvitationService {
           select: {
             id: true,
             title: true,
+            titleAr: true,
+            titleEn: true,
             previewImage: true,
             editableFields: true,
           },
@@ -239,6 +241,8 @@ export class InvitationService {
                 select: {
                   id: true,
                   title: true,
+                  titleAr: true,
+                  titleEn: true,
                   previewImage: true,
                   demoLink: true,
                 },
