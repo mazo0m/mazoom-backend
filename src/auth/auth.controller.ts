@@ -17,17 +17,17 @@ import { AbuseService } from '../common/services/abuse.service';
 /** Shared cookie configuration for access tokens. */
 const ACCESS_TOKEN_COOKIE_OPTIONS: express.CookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax',
-  maxAge: 15 * 60 * 1000, // 15 minutes
+  secure: true,
+  sameSite: 'none',
+  maxAge: 15 * 60 * 1000,
 };
 
 /** Shared cookie configuration for refresh tokens. */
 const REFRESH_TOKEN_COOKIE_OPTIONS: express.CookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  secure: true,
+  sameSite: 'none',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
 @ApiTags('Auth')
@@ -272,7 +272,7 @@ export class AuthController {
     response.clearCookie('refreshToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'none',
     });
 
     return { message: 'Logged out successfully' };
