@@ -88,7 +88,41 @@ async function main() {
     },
   });
 
-  console.log(`Created templates: "${template1.title}" and "${template2.title}"`);
+  const template3 = await prisma.template.create({
+    data: {
+      title: 'Boho Terracotta Wedding',
+      description: 'تصميم زفاف بوهيمي دافئ مزين بالزهور المجففة وتدرجات التراكوتا مع مؤثرات تساقط أوراق الشجر وموسيقى خلفية.',
+      previewImage: '/images/terracotta-preview.png',
+      price: 150.00,
+      demoLink: '/invite/terracotta-demo',
+      isPremium: true,
+      category: 'Weddings',
+      editableFields: {
+        eventTitle: { type: 'string', label: 'Event Title', default: 'العريس & العروس' },
+        eventDate: { type: 'date', label: 'Event Date' },
+        eventLocation: { type: 'string', label: 'Event Location', default: 'قاعة السمو، الرياض' },
+      },
+    },
+  });
+
+  const template4 = await prisma.template.create({
+    data: {
+      title: 'Watercolor Lily Wedding',
+      description: 'تصميم زفاف ناعم ومميز مستوحى من زهور الزنبق المائية وتدرجات اللافندر مع مؤثرات تساقط البتلات وموسيقى خلفية.',
+      previewImage: '/images/lily-preview.png',
+      price: 150.00,
+      demoLink: '/invite/lily-demo',
+      isPremium: true,
+      category: 'Weddings',
+      editableFields: {
+        eventTitle: { type: 'string', label: 'Event Title', default: 'أحمد & سارة' },
+        eventDate: { type: 'date', label: 'Event Date' },
+        eventLocation: { type: 'string', label: 'Event Location', default: 'حديقة الياسمين، الرياض' },
+      },
+    },
+  });
+
+  console.log(`Created templates: "${template1.title}", "${template2.title}", "${template3.title}", and "${template4.title}"`);
 
   // 4. Pre-create Approved Purchase Request, Purchase, and Invitation for Demo slug (Royal Gold)
   console.log('Creating demo invitation mapping for Royal Gold...');
@@ -171,6 +205,88 @@ async function main() {
   });
 
   console.log(`Demo invitation successfully mapped! URL slug: "${invitation2.slug}"`);
+
+  // 5a. Pre-create Approved Purchase Request, Purchase, and Invitation for Demo slug (Boho Terracotta)
+  console.log('Creating demo invitation mapping for Boho Terracotta...');
+  const purchaseRequest3 = await prisma.purchaseRequest.create({
+    data: {
+      userId: admin.id,
+      templateId: template3.id,
+      contactEmail: 'admin@mazoom.app',
+      contactPhone: '+966500000001',
+      status: 'APPROVED',
+    },
+  });
+
+  const purchase3 = await prisma.purchase.create({
+    data: {
+      userId: admin.id,
+      templateId: template3.id,
+      purchaseRequestId: purchaseRequest3.id,
+      slug: 'terracotta-demo',
+    },
+  });
+
+  const invitation3 = await prisma.invitation.create({
+    data: {
+      purchaseId: purchase3.id,
+      slug: 'terracotta-demo',
+      eventTitle: 'العريس & العروس',
+      eventLocation: 'قاعة السمو، الرياض',
+      eventDate: new Date('2027-03-02T06:21:00.000Z'),
+      locationUrl: 'https://maps.google.com/?q=24.7136,46.6753',
+      welcomeText: 'بقلوبٍ يملؤها الفرح\nوبدعاءٍ صادق أن يتمّ الله لنا ولكم الخير\nنتشرف بدعوتكم لمشاركتنا\nفرحة أبنائنا\n\nفي يومٍ جمع الله فيه القلوب\nوكتب فيه بداية عمرٍ جديد\nوجودكم بيننا شرف\nمشاركتكم لنا تزيد الفرح فرحًا 🤍',
+      images: [],
+      musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+      contactName: 'أخو العريس',
+      contactPhone: '+966500000001',
+      allowGuestUploads: true,
+      moments: [],
+    },
+  });
+
+  console.log(`Demo invitation successfully mapped! URL slug: "${invitation3.slug}"`);
+
+  // 5b. Pre-create Approved Purchase Request, Purchase, and Invitation for Demo slug (Watercolor Lily)
+  console.log('Creating demo invitation mapping for Watercolor Lily...');
+  const purchaseRequest4 = await prisma.purchaseRequest.create({
+    data: {
+      userId: admin.id,
+      templateId: template4.id,
+      contactEmail: 'admin@mazoom.app',
+      contactPhone: '+966500000001',
+      status: 'APPROVED',
+    },
+  });
+
+  const purchase4 = await prisma.purchase.create({
+    data: {
+      userId: admin.id,
+      templateId: template4.id,
+      purchaseRequestId: purchaseRequest4.id,
+      slug: 'lily-demo',
+    },
+  });
+
+  const invitation4 = await prisma.invitation.create({
+    data: {
+      purchaseId: purchase4.id,
+      slug: 'lily-demo',
+      eventTitle: 'أحمد & سارة',
+      eventLocation: 'حديقة الياسمين، الرياض',
+      eventDate: new Date('2027-05-15T18:00:00.000Z'),
+      locationUrl: 'https://maps.google.com/?q=24.7136,46.6753',
+      welcomeText: 'بقلوبٍ يملؤها الفرح والسرور،\nنتشرف بدعوتكم لمشاركتنا فرحة العمر\nوتوثيق عهد الحب والوفاء\n\nفي حفل زفاف أبنائنا\n\nحضوركم يسعدنا ويضفي على ليلتنا بهجة وسروراً 🌿',
+      images: [],
+      musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+      contactName: 'أخو العريس',
+      contactPhone: '+966500000001',
+      allowGuestUploads: true,
+      moments: [],
+    },
+  });
+
+  console.log(`Demo invitation successfully mapped! URL slug: "${invitation4.slug}"`);
 
   // 6. Seed testimonials
   console.log('Creating testimonial users, purchases, and testimonials...');
