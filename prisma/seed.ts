@@ -122,7 +122,24 @@ async function main() {
     },
   });
 
-  console.log(`Created templates: "${template1.title}", "${template2.title}", "${template3.title}", and "${template4.title}"`);
+  const template5 = await prisma.template.create({
+    data: {
+      title: 'Emerald Luxury Wedding',
+      description: 'تصميم زفاف زمردي فاخر باللون الأخضر الداكن والذهبي الكلاسيكي مع مؤثرات تساقط الأوراق الذهبية وموسيقى خلفية متناغمة.',
+      previewImage: '/images/emerald-preview.png',
+      price: 150.00,
+      demoLink: '/invite/emerald-demo',
+      isPremium: true,
+      category: 'Weddings',
+      editableFields: {
+        eventTitle: { type: 'string', label: 'Event Title', default: 'العريس & العروس' },
+        eventDate: { type: 'date', label: 'Event Date' },
+        eventLocation: { type: 'string', label: 'Event Location', default: 'قاعة اليمامة، الرياض' },
+      },
+    },
+  });
+
+  console.log(`Created templates: "${template1.title}", "${template2.title}", "${template3.title}", "${template4.title}", and "${template5.title}"`);
 
   // 4. Pre-create Approved Purchase Request, Purchase, and Invitation for Demo slug (Royal Gold)
   console.log('Creating demo invitation mapping for Royal Gold...');
@@ -287,6 +304,47 @@ async function main() {
   });
 
   console.log(`Demo invitation successfully mapped! URL slug: "${invitation4.slug}"`);
+
+  // 5c. Pre-create Approved Purchase Request, Purchase, and Invitation for Demo slug (Emerald Luxury)
+  console.log('Creating demo invitation mapping for Emerald Luxury...');
+  const purchaseRequest5 = await prisma.purchaseRequest.create({
+    data: {
+      userId: admin.id,
+      templateId: template5.id,
+      contactEmail: 'admin@mazoom.app',
+      contactPhone: '+966500000001',
+      status: 'APPROVED',
+    },
+  });
+
+  const purchase5 = await prisma.purchase.create({
+    data: {
+      userId: admin.id,
+      templateId: template5.id,
+      purchaseRequestId: purchaseRequest5.id,
+      slug: 'emerald-demo',
+    },
+  });
+
+  const invitation5 = await prisma.invitation.create({
+    data: {
+      purchaseId: purchase5.id,
+      slug: 'emerald-demo',
+      eventTitle: 'أحمد & سارة',
+      eventLocation: 'قاعة اليمامة، الرياض',
+      eventDate: new Date('2027-05-15T18:00:00.000Z'),
+      locationUrl: 'https://maps.google.com/?q=24.7136,46.6753',
+      welcomeText: 'بقلوبٍ يملؤها الفرح والسرور،\nنتشرف بدعوتكم لمشاركتنا فرحة العمر\nوتوثيق عهد الحب والوفاء\n\nفي حفل زفاف أبنائنا\n\nحضوركم يسعدنا ويضفي على ليلتنا بهجة وسروراً 🌿',
+      images: [],
+      musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+      contactName: 'أخو العريس',
+      contactPhone: '+966500000001',
+      allowGuestUploads: true,
+      moments: [],
+    },
+  });
+
+  console.log(`Demo invitation successfully mapped! URL slug: "${invitation5.slug}"`);
 
   // 6. Seed testimonials
   console.log('Creating testimonial users, purchases, and testimonials...');
