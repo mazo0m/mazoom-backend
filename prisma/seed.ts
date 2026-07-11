@@ -167,16 +167,33 @@ async function main() {
       purchaseId: purchase1.id,
       slug: 'royal-gold-demo',
       eventTitle: 'العريس & العروس',
+      eventTitleAr: 'العريس & العروس',
+      eventTitleEn: 'Groom & Bride',
       eventLocation: 'قاعة السمو، الرياض',
+      eventLocationAr: 'قاعة السمو، الرياض',
+      eventLocationEn: 'Al-Sumou Hall, Riyadh',
       eventDate: new Date('2027-03-02T06:21:00.000Z'),
       locationUrl: 'https://maps.google.com/?q=24.7136,46.6753',
       welcomeText: 'بقلوبٍ يملؤها الفرح\nوبدعاءٍ صادق أن يتمّ الله لنا ولكم الخير\nنتشرف بدعوتكم لمشاركتنا\nفرحة أبنائنا\n\nفي يومٍ جمع الله فيه القلوب\nوكتب فيه بداية عمرٍ جديد\nوجودكم بيننا شرف\nمشاركتكم لنا تزيد الفرح فرحًا 🤍',
+      welcomeTextAr: 'بقلوبٍ يملؤها الفرح\nوبدعاءٍ صادق أن يتمّ الله لنا ولكم الخير\nنتشرف بدعوتكم لمشاركتنا\nفرحة أبنائنا\n\nفي يومٍ جمع الله فيه القلوب\nوكتب فيه بداية عمرٍ جديد\nوجودكم بيننا شرف\nمشاركتكم لنا تزيد الفرح فرحًا 🤍',
+      welcomeTextEn: 'With hearts full of joy,\nAnd a sincere prayer that Allah completes our happiness,\nWe are honored to invite you to share our children\'s joy\n\nOn a day when Allah united their hearts\nAnd marked the beginning of a new lifetime\nYour presence is our honor,\nAnd your participation doubles our joy 🤍',
+      languageMode: 'both',
       images: [],
       musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
       contactName: 'أخو العريس',
       contactPhone: '+966500000001',
       allowGuestUploads: true,
       moments: [],
+      eventDetails: [
+        { text: 'الرجاء تأكيد الحضور في موعد أقصاه 1 مارس', textAr: 'الرجاء تأكيد الحضور في موعد أقصاه 1 مارس', textEn: 'Please confirm attendance by March 1st' },
+        { text: 'يمنع التصوير منعاً باتاً للحفاظ على الخصوصية', textAr: 'يمنع التصوير منعاً باتاً للحفاظ على الخصوصية', textEn: 'Photography is strictly prohibited for privacy' },
+        { text: 'يمنع اصطحاب الأطفال حرصاً على راحتكم', textAr: 'يمنع اصطحاب الأطفال حرصاً على راحتكم', textEn: 'Children are not allowed for your convenience' }
+      ],
+      eventProgram: [
+        { time: '20:00', title: 'استقبال الضيوف', titleAr: 'استقبال الضيوف', titleEn: 'Guest Reception' },
+        { time: '21:00', title: 'الزفة والترحيب', titleAr: 'الزفة والترحيب', titleEn: 'Entrance & Welcome' },
+        { time: '22:00', title: 'تناول طعام العشاء', titleAr: 'تناول طعام العشاء', titleEn: 'Dinner Banquet' }
+      ]
     },
   });
 
@@ -208,16 +225,33 @@ async function main() {
       purchaseId: purchase2.id,
       slug: 'garden-demo',
       eventTitle: 'أحمد & سارة',
+      eventTitleAr: 'أحمد & سارة',
+      eventTitleEn: 'Ahmed & Sarah',
       eventLocation: 'حديقة الياسمين، الرياض',
+      eventLocationAr: 'حديقة الياسمين، الرياض',
+      eventLocationEn: 'Jasmine Garden, Riyadh',
       eventDate: new Date('2027-05-15T18:00:00.000Z'),
       locationUrl: 'https://maps.google.com/?q=24.7136,46.6753',
       welcomeText: 'بقلوبٍ يملؤها الفرح والسرور،\nنتشرف بدعوتكم لمشاركتنا فرحة العمر\nوتوثيق عهد الحب والوفاء\n\nفي حفل زفاف أبنائنا\n\nحضوركم يسعدنا ويضفي على ليلتنا بهجة وسروراً 🌿',
+      welcomeTextAr: 'بقلوبٍ يملؤها الفرح والسرور،\nنتشرف بدعوتكم لمشاركتنا فرحة العمر\nوتوثيق عهد الحب والوفاء\n\nفي حفل زفاف أبنائنا\n\nحضوركم يسعدنا ويضفي على ليلتنا بهجة وسروراً 🌿',
+      welcomeTextEn: 'With hearts full of joy and pleasure,\nWe are honored to invite you to share our lifetime joy\nAnd witness our bond of love and loyalty\n\nAt our children\'s wedding ceremony\n\nYour presence delights us and adds beauty and joy to our night 🌿',
+      languageMode: 'both',
       images: [],
       musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
       contactName: 'أخو العريس',
       contactPhone: '+966500000001',
       allowGuestUploads: true,
       moments: [],
+      eventDetails: [
+        { text: 'الرجاء تأكيد الحضور في موعد أقصاه 10 مايو', textAr: 'الرجاء تأكيد الحضور في موعد أقصاه 10 مايو', textEn: 'Please confirm attendance by May 10th' },
+        { text: 'نرجو منكم عدم تصوير مقاطع الفيديو لمشاركتنا اللحظات الخاصة بأمان', textAr: 'نرجو منكم عدم تصوير مقاطع الفيديو لمشاركتنا اللحظات الخاصة بأمان', textEn: 'Please refrain from taking videos to preserve our special moments' },
+        { text: 'الدعوة شخصية وخاصة لحاملي الدعوة فقط', textAr: 'الدعوة شخصية وخاصة لحاملي الدعوة فقط', textEn: 'This invitation is personal and strictly for cardholders' }
+      ],
+      eventProgram: [
+        { time: '18:00', title: 'وصول المدعوين واستقبالهم', titleAr: 'وصول المدعوين واستقبالهم', titleEn: 'Guest Arrival & Reception' },
+        { time: '19:00', title: 'مراسم عقد القران والزفة', titleAr: 'مراسم عقد القران والزفة', titleEn: 'Wedding Ceremony & Entrance' },
+        { time: '20:30', title: 'بوفيه العشاء الفاخر', titleAr: 'بوفيه العشاء الفاخر', titleEn: 'Grand Dinner Buffet' }
+      ]
     },
   });
 
@@ -249,16 +283,33 @@ async function main() {
       purchaseId: purchase3.id,
       slug: 'terracotta-demo',
       eventTitle: 'العريس & العروس',
+      eventTitleAr: 'العريس & العروس',
+      eventTitleEn: 'Groom & Bride',
       eventLocation: 'قاعة السمو، الرياض',
+      eventLocationAr: 'قاعة السمو، الرياض',
+      eventLocationEn: 'Al-Sumou Hall, Riyadh',
       eventDate: new Date('2027-03-02T06:21:00.000Z'),
       locationUrl: 'https://maps.google.com/?q=24.7136,46.6753',
       welcomeText: 'بقلوبٍ يملؤها الفرح\nوبدعاءٍ صادق أن يتمّ الله لنا ولكم الخير\nنتشرف بدعوتكم لمشاركتنا\nفرحة أبنائنا\n\nفي يومٍ جمع الله فيه القلوب\nوكتب فيه بداية عمرٍ جديد\nوجودكم بيننا شرف\nمشاركتكم لنا تزيد الفرح فرحًا 🤍',
+      welcomeTextAr: 'بقلوبٍ يملؤها الفرح\nوبدعاءٍ صادق أن يتمّ الله لنا ولكم الخير\nنتشرف بدعوتكم لمشاركتنا\nفرحة أبنائنا\n\nفي يومٍ جمع الله فيه القلوب\nوكتب فيه بداية عمرٍ جديد\nوجودكم بيننا شرف\nمشاركتكم لنا تزيد الفرح فرحًا 🤍',
+      welcomeTextEn: 'With hearts full of joy,\nAnd a sincere prayer that Allah completes our happiness,\nWe are honored to invite you to share our children\'s joy\n\nOn a day when Allah united their hearts\nAnd marked the beginning of a new lifetime\nYour presence is our honor,\nAnd your participation doubles our joy 🤍',
+      languageMode: 'both',
       images: [],
       musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
       contactName: 'أخو العريس',
       contactPhone: '+966500000001',
       allowGuestUploads: true,
       moments: [],
+      eventDetails: [
+        { text: 'الرجاء تأكيد الحضور في موعد أقصاه 1 مارس', textAr: 'الرجاء تأكيد الحضور في موعد أقصاه 1 مارس', textEn: 'Please confirm attendance by March 1st' },
+        { text: 'يمنع التصوير منعاً باتاً للحفاظ على الخصوصية', textAr: 'يمنع التصوير منعاً باتاً للحفاظ على الخصوصية', textEn: 'Photography is strictly prohibited for privacy' },
+        { text: 'يمنع اصطحاب الأطفال حرصاً على راحتكم', textAr: 'يمنع اصطحاب الأطفال حرصاً على راحتكم', textEn: 'Children are not allowed for your convenience' }
+      ],
+      eventProgram: [
+        { time: '20:00', title: 'استقبال الضيوف', titleAr: 'استقبال الضيوف', titleEn: 'Guest Reception' },
+        { time: '21:00', title: 'الزفة والترحيب', titleAr: 'الزفة والترحيب', titleEn: 'Entrance & Welcome' },
+        { time: '22:00', title: 'تناول طعام العشاء', titleAr: 'تناول طعام العشاء', titleEn: 'Dinner Banquet' }
+      ]
     },
   });
 
@@ -290,16 +341,33 @@ async function main() {
       purchaseId: purchase4.id,
       slug: 'lily-demo',
       eventTitle: 'أحمد & سارة',
+      eventTitleAr: 'أحمد & سارة',
+      eventTitleEn: 'Ahmed & Sarah',
       eventLocation: 'حديقة الياسمين، الرياض',
+      eventLocationAr: 'حديقة الياسمين، الرياض',
+      eventLocationEn: 'Jasmine Garden, Riyadh',
       eventDate: new Date('2027-05-15T18:00:00.000Z'),
       locationUrl: 'https://maps.google.com/?q=24.7136,46.6753',
       welcomeText: 'بقلوبٍ يملؤها الفرح والسرور،\nنتشرف بدعوتكم لمشاركتنا فرحة العمر\nوتوثيق عهد الحب والوفاء\n\nفي حفل زفاف أبنائنا\n\nحضوركم يسعدنا ويضفي على ليلتنا بهجة وسروراً 🌿',
+      welcomeTextAr: 'بقلوبٍ يملؤها الفرح والسرور،\nنتشرف بدعوتكم لمشاركتنا فرحة العمر\nوتوثيق عهد الحب والوفاء\n\nفي حفل زفاف أبنائنا\n\nحضوركم يسعدنا ويضفي على ليلتنا بهجة وسروراً 🌿',
+      welcomeTextEn: 'With hearts full of joy and pleasure,\nWe are honored to invite you to share our lifetime joy\nAnd witness our bond of love and loyalty\n\nAt our children\'s wedding ceremony\n\nYour presence delights us and adds beauty and joy to our night 🌿',
+      languageMode: 'both',
       images: [],
       musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
       contactName: 'أخو العريس',
       contactPhone: '+966500000001',
       allowGuestUploads: true,
       moments: [],
+      eventDetails: [
+        { text: 'الرجاء تأكيد الحضور في موعد أقصاه 10 مايو', textAr: 'الرجاء تأكيد الحضور في موعد أقصاه 10 مايو', textEn: 'Please confirm attendance by May 10th' },
+        { text: 'نرجو منكم عدم تصوير مقاطع الفيديو لمشاركتنا اللحظات الخاصة بأمان', textAr: 'نرجو منكم عدم تصوير مقاطع الفيديو لمشاركتنا اللحظات الخاصة بأمان', textEn: 'Please refrain from taking videos to preserve our special moments' },
+        { text: 'الدعوة شخصية وخاصة لحاملي الدعوة فقط', textAr: 'الدعوة شخصية وخاصة لحاملي الدعوة فقط', textEn: 'This invitation is personal and strictly for cardholders' }
+      ],
+      eventProgram: [
+        { time: '18:00', title: 'وصول المدعوين واستقبالهم', titleAr: 'وصول المدعوين واستقبالهم', titleEn: 'Guest Arrival & Reception' },
+        { time: '19:00', title: 'مراسم عقد القران والزفة', titleAr: 'مراسم عقد القران والزفة', titleEn: 'Wedding Ceremony & Entrance' },
+        { time: '20:30', title: 'بوفيه العشاء الفاخر', titleAr: 'بوفيه العشاء الفاخر', titleEn: 'Grand Dinner Buffet' }
+      ]
     },
   });
 
@@ -331,16 +399,33 @@ async function main() {
       purchaseId: purchase5.id,
       slug: 'emerald-demo',
       eventTitle: 'أحمد & سارة',
+      eventTitleAr: 'أحمد & سارة',
+      eventTitleEn: 'Ahmed & Sarah',
       eventLocation: 'قاعة اليمامة، الرياض',
+      eventLocationAr: 'قاعة اليمامة، الرياض',
+      eventLocationEn: 'Al-Yamama Hall, Riyadh',
       eventDate: new Date('2027-05-15T18:00:00.000Z'),
       locationUrl: 'https://maps.google.com/?q=24.7136,46.6753',
       welcomeText: 'بقلوبٍ يملؤها الفرح والسرور،\nنتشرف بدعوتكم لمشاركتنا فرحة العمر\nوتوثيق عهد الحب والوفاء\n\nفي حفل زفاف أبنائنا\n\nحضوركم يسعدنا ويضفي على ليلتنا بهجة وسروراً 🌿',
+      welcomeTextAr: 'بقلوبٍ يملؤها الفرح والسرور،\nنتشرف بدعوتكم لمشاركتنا فرحة العمر\nوتوثيق عهد الحب والوفاء\n\nفي حفل زفاف أبنائنا\n\nحضوركم يسعدنا ويضفي على ليلتنا بهجة وسروراً 🌿',
+      welcomeTextEn: 'With hearts full of joy and pleasure,\nWe are honored to invite you to share our lifetime joy\nAnd witness our bond of love and loyalty\n\nAt our children\'s wedding ceremony\n\nYour presence delights us and adds beauty and joy to our night 🌿',
+      languageMode: 'both',
       images: [],
       musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
       contactName: 'أخو العريس',
       contactPhone: '+966500000001',
       allowGuestUploads: true,
       moments: [],
+      eventDetails: [
+        { text: 'الرجاء تأكيد الحضور في موعد أقصاه 10 مايو', textAr: 'الرجاء تأكيد الحضور في موعد أقصاه 10 مايو', textEn: 'Please confirm attendance by May 10th' },
+        { text: 'نرجو منكم عدم تصوير مقاطع الفيديو لمشاركتنا اللحظات الخاصة بأمان', textAr: 'نرجو منكم عدم تصوير مقاطع الفيديو لمشاركتنا اللحظات الخاصة بأمان', textEn: 'Please refrain from taking videos to preserve our special moments' },
+        { text: 'الدعوة شخصية وخاصة لحاملي الدعوة فقط', textAr: 'الدعوة شخصية وخاصة لحاملي الدعوة فقط', textEn: 'This invitation is personal and strictly for cardholders' }
+      ],
+      eventProgram: [
+        { time: '18:00', title: 'وصول المدعوين واستقبالهم', titleAr: 'وصول المدعوين واستقبالهم', titleEn: 'Guest Arrival & Reception' },
+        { time: '19:00', title: 'مراسم عقد القران والزفة', titleAr: 'مراسم عقد القران والزفة', titleEn: 'Wedding Ceremony & Entrance' },
+        { time: '20:30', title: 'بوفيه العشاء الفاخر', titleAr: 'بوفيه العشاء الفاخر', titleEn: 'Grand Dinner Buffet' }
+      ]
     },
   });
 
@@ -405,8 +490,22 @@ async function main() {
       purchaseId: pur1.id,
       slug: 'ahmed-garden',
       eventTitle: 'Wedding Host',
+      eventTitleAr: 'مضيف الزفاف',
+      eventTitleEn: 'Wedding Host',
       eventLocation: 'الرياض',
+      eventLocationAr: 'الرياض',
+      eventLocationEn: 'Riyadh',
       eventDate: new Date('2027-08-01T19:00:00Z'),
+      welcomeText: 'ندعوكم لحفل زفافنا الميمون',
+      welcomeTextAr: 'ندعوكم لحفل زفافنا الميمون',
+      welcomeTextEn: 'We invite you to our blessed wedding ceremony',
+      languageMode: 'both',
+      eventDetails: [
+        { text: 'الرجاء تأكيد الحضور في موعد أقصاه 1 أغسطس', textAr: 'الرجاء تأكيد الحضور في موعد أقصاه 1 أغسطس', textEn: 'Please confirm attendance by August 1st' }
+      ],
+      eventProgram: [
+        { time: '19:00', title: 'الاستقبال والترحيب', titleAr: 'الاستقبال والترحيب', titleEn: 'Reception & Welcome' }
+      ]
     }
   });
   await prisma.testimonial.create({
@@ -440,8 +539,22 @@ async function main() {
       purchaseId: pur2.id,
       slug: 'sarah-royal',
       eventTitle: 'Bridal Shower Host',
+      eventTitleAr: 'مضيفة حفلة توديع العزوبية',
+      eventTitleEn: 'Bridal Shower Host',
       eventLocation: 'جدة',
+      eventLocationAr: 'جدة',
+      eventLocationEn: 'Jeddah',
       eventDate: new Date('2027-09-12T17:00:00Z'),
+      welcomeText: 'ندعوكم لحفل توديع العزوبية',
+      welcomeTextAr: 'ندعوكم لحفل توديع العزوبية',
+      welcomeTextEn: 'We invite you to the bridal shower',
+      languageMode: 'both',
+      eventDetails: [
+        { text: 'الرجاء تأكيد الحضور في موعد أقصاه 10 سبتمبر', textAr: 'الرجاء تأكيد الحضور في موعد أقصاه 10 سبتمبر', textEn: 'Please confirm attendance by September 10th' }
+      ],
+      eventProgram: [
+        { time: '17:00', title: 'بدء الحفل والترحيب بالعروس', titleAr: 'بدء الحفل والترحيب بالعروس', titleEn: 'Ceremony Start & Greeting the Bride' }
+      ]
     }
   });
   await prisma.testimonial.create({
@@ -475,8 +588,22 @@ async function main() {
       purchaseId: pur3.id,
       slug: 'khalid-garden',
       eventTitle: 'Anniversary Host',
+      eventTitleAr: 'مضيف ذكرى الزواج',
+      eventTitleEn: 'Anniversary Host',
       eventLocation: 'الدمام',
+      eventLocationAr: 'الدمام',
+      eventLocationEn: 'Dammam',
       eventDate: new Date('2027-10-20T20:00:00Z'),
+      welcomeText: 'ندعوكم لحفل ذكرى زواجنا',
+      welcomeTextAr: 'ندعوكم لحفل ذكرى زواجنا',
+      welcomeTextEn: 'We invite you to our wedding anniversary',
+      languageMode: 'both',
+      eventDetails: [
+        { text: 'الرجاء تأكيد الحضور في موعد أقصاه 15 أكتوبر', textAr: 'الرجاء تأكيد الحضور في موعد أقصاه 15 أكتوبر', textEn: 'Please confirm attendance by October 15th' }
+      ],
+      eventProgram: [
+        { time: '20:00', title: 'الاستقبال وتناول العشاء', titleAr: 'الاستقبال وتناول العشاء', titleEn: 'Reception & Dinner' }
+      ]
     }
   });
   await prisma.testimonial.create({
