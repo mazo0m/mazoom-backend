@@ -58,7 +58,7 @@ async function main() {
     data: {
       title: 'Royal Gold Wedding',
       description: 'تصميم زفاف ذهبي فاخر مع مؤثرات تساقط الثلوج وموسيقى خلفية ونظام تأكيد حضور متكامل.',
-      previewImage: '/base44.app/api/apps/6966e1f30fa9fbe508239391/files/mp/public/6966e1f30fa9fbe508239391/941a523da_1000046659.png',
+      previewImage: '/images/royal-gold-preview.png',
       price: 150.00,
       demoLink: '/invite/royal-gold-demo',
       isPremium: true,
