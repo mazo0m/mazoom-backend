@@ -315,6 +315,14 @@ export class CreateInvitationDto {
   allowGuestUploads?: boolean;
 
   @ApiPropertyOptional({
+    description: 'Whether guests are allowed to add companions to their RSVP response',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  allowCompanions?: boolean;
+
+  @ApiPropertyOptional({
     description: 'Array of photo URLs/paths for moments',
     example: ['/public/uploads/moment1.jpg'],
     type: [String],
