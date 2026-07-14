@@ -46,6 +46,7 @@ export class PurchaseService {
             contactName: true,
             contactPhone: true,
             allowGuestUploads: true,
+            allowCompanions: true,
             moments: true,
           },
         },
