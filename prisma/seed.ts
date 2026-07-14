@@ -179,7 +179,28 @@ async function main() {
     },
   });
 
-  console.log(`Created templates: "${template1.title}", "${template2.title}", "${template3.title}", "${template4.title}", "${template5.title}", "${template6.title}", and "${template7.title}"`);
+  const template8 = await prisma.template.create({
+    data: {
+      title: 'Forest Foliage Wedding',
+      titleEn: 'Forest Foliage Wedding',
+      titleAr: 'تصميم أوراق الشجر الغناء',
+      description: 'تصميم زفاف راقٍ بألوان أوراق الشجر الداكنة والذهبي الدافئ، مع خلفية فيديو انسيابية ومؤثرات جزيئات متساقطة.',
+      descriptionEn: 'A refined wedding design with deep forest green and gold hues, dynamic flowing background video, and delicate falling particles.',
+      descriptionAr: 'تصميم زفاف راقٍ بألوان أوراق الشجر الداكنة والذهبي الدافئ، مع خلفية فيديو انسيابية ومؤثرات جزيئات متساقطة.',
+      previewImage: '/images/forest-foliage-preview.png',
+      price: 150.00,
+      demoLink: '/invite/forest-foliage-demo',
+      isPremium: true,
+      category: 'Weddings',
+      editableFields: {
+        eventTitle: { type: 'string', label: 'Event Title', default: 'أحمد & سارة' },
+        eventDate: { type: 'date', label: 'Event Date' },
+        eventLocation: { type: 'string', label: 'Event Location', default: 'قاعة السمو، الرياض' },
+      },
+    },
+  });
+
+  console.log(`Created templates: "${template1.title}", "${template2.title}", "${template3.title}", "${template4.title}", "${template5.title}", "${template6.title}", "${template7.title}", and "${template8.title}"`);
 
   // 4. Pre-create Approved Purchase Request, Purchase, and Invitation for Demo slug (Royal Gold)
   console.log('Creating demo invitation mapping for Royal Gold...');
@@ -586,6 +607,64 @@ async function main() {
   });
 
   console.log(`Demo invitation successfully mapped! URL slug: "${invitation7.slug}"`);
+
+  // 5f. Pre-create Approved Purchase Request, Purchase, and Invitation for Demo slug (Forest Foliage)
+  console.log('Creating demo invitation mapping for Forest Foliage...');
+  const purchaseRequest8 = await prisma.purchaseRequest.create({
+    data: {
+      userId: admin.id,
+      templateId: template8.id,
+      contactEmail: 'admin@mazoom.app',
+      contactPhone: '+966500000001',
+      status: 'APPROVED',
+    },
+  });
+
+  const purchase8 = await prisma.purchase.create({
+    data: {
+      userId: admin.id,
+      templateId: template8.id,
+      purchaseRequestId: purchaseRequest8.id,
+      slug: 'forest-foliage-demo',
+    },
+  });
+
+  const invitation8 = await prisma.invitation.create({
+    data: {
+      purchaseId: purchase8.id,
+      slug: 'forest-foliage-demo',
+      eventTitle: 'أحمد & سارة',
+      eventTitleAr: 'أحمد & سارة',
+      eventTitleEn: 'Ahmed & Sarah',
+      eventLocation: 'قاعة السمو، الرياض',
+      eventLocationAr: 'قاعة السمو، الرياض',
+      eventLocationEn: 'Al-Sumou Hall, Riyadh',
+      eventDate: new Date('2027-06-20T19:00:00.000Z'),
+      locationUrl: 'https://maps.google.com/?q=24.7136,46.6753',
+      welcomeText: 'بقلوبٍ يملؤها الفرح والسرور،\nنتشرف بدعوتكم لمشاركتنا فرحة العمر\nوتوثيق عهد الحب والوفاء\n\nفي حفل زفاف أبنائنا\n\nحضوركم يسعدنا ويضفي على ليلتنا بهجة وسروراً 🌿',
+      welcomeTextAr: 'بقلوبٍ يملؤها الفرح والسرور،\nنتشرف بدعوتكم لمشاركتنا فرحة العمر\nوتوثيق عهد الحب والوفاء\n\nفي حفل زفاف أبنائنا\n\nحضوركم يسعدنا ويضفي على ليلتنا بهجة وسروراً 🌿',
+      welcomeTextEn: 'With hearts full of joy and pleasure,\nWe are honored to invite you to share our lifetime joy\nAnd witness our bond of love and loyalty\n\nAt our children\'s wedding ceremony\n\nYour presence delights us and adds beauty and joy to our night 🌿',
+      languageMode: 'both',
+      images: [],
+      musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+      contactName: 'أخو العريس',
+      contactPhone: '+966500000001',
+      allowGuestUploads: true,
+      moments: [],
+      eventDetails: [
+        { text: 'الرجاء تأكيد الحضور في موعد أقصاه 10 يونيو', textAr: 'الرجاء تأكيد الحضور في موعد أقصاه 10 يونيو', textEn: 'Please confirm attendance by June 10th' },
+        { text: 'نرجو منكم عدم تصوير مقاطع الفيديو لمشاركتنا اللحظات الخاصة بأمان', textAr: 'نرجو منكم عدم تصوير مقاطع الفيديو لمشاركتنا اللحظات الخاصة بأمان', textEn: 'Please refrain from taking videos to preserve our special moments' },
+        { text: 'الدعوة شخصية وخاصة لحاملي الدعوة فقط', textAr: 'الدعوة شخصية وخاصة لحاملي الدعوة فقط', textEn: 'This invitation is personal and strictly for cardholders' }
+      ],
+      eventProgram: [
+        { time: '19:00', title: 'وصول الضيوف الكرام', titleAr: 'وصول الضيوف الكرام', titleEn: 'Guest Arrival' },
+        { time: '20:00', title: 'مراسم الزفة والترحيب', titleAr: 'مراسم الزفة والترحيب', titleEn: 'Grand Entrance' },
+        { time: '21:30', title: 'بوفيه العشاء الفاخر', titleAr: 'بوفيه العشاء الفاخر', titleEn: 'Dinner Buffet' }
+      ]
+    },
+  });
+
+  console.log(`Demo invitation successfully mapped! URL slug: "${invitation8.slug}"`);
 
   // 6. Seed testimonials
   console.log('Creating testimonial users, purchases, and testimonials...');
