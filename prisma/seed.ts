@@ -142,6 +142,8 @@ async function main() {
   const template6 = await prisma.template.create({
     data: {
       title: 'White Gypsophila Wedding',
+      titleEn: 'White Gypsophila Wedding',
+      titleAr: 'White Gypsophila Wedding',
       description: 'تصميم زفاف أبيض ناصع مزين بزهور الجبسوفيلا البيضاء الناعمة مع خلفية فيديو أنيقة ومؤثرات تساقط الزهور.',
       previewImage: '/images/white-preview.png',
       price: 150.00,
@@ -156,7 +158,28 @@ async function main() {
     },
   });
 
-  console.log(`Created templates: "${template1.title}", "${template2.title}", "${template3.title}", "${template4.title}", "${template5.title}", and "${template6.title}"`);
+  const template7 = await prisma.template.create({
+    data: {
+      title: 'Flow Wedding',
+      titleEn: 'Flow Wedding',
+      titleAr: 'تصميم انسيابي فاخر',
+      description: 'تصميم زفاف انسيابي فاخر مع خلفية فيديو فلو متدفقة ونظام متكامل لتأكيد الحضور.',
+      descriptionEn: 'A luxury flowing wedding design with dynamic flow video background and integrated RSVP system.',
+      descriptionAr: 'تصميم زفاف انسيابي فاخر مع خلفية فيديو فلو متدفقة ونظام متكامل لتأكيد الحضور.',
+      previewImage: '/images/flow-preview.png',
+      price: 150.00,
+      demoLink: '/invite/flow-demo',
+      isPremium: true,
+      category: 'Weddings',
+      editableFields: {
+        eventTitle: { type: 'string', label: 'Event Title', default: 'أحمد & سارة' },
+        eventDate: { type: 'date', label: 'Event Date' },
+        eventLocation: { type: 'string', label: 'Event Location', default: 'قاعة السمو، الرياض' },
+      },
+    },
+  });
+
+  console.log(`Created templates: "${template1.title}", "${template2.title}", "${template3.title}", "${template4.title}", "${template5.title}", "${template6.title}", and "${template7.title}"`);
 
   // 4. Pre-create Approved Purchase Request, Purchase, and Invitation for Demo slug (Royal Gold)
   console.log('Creating demo invitation mapping for Royal Gold...');
@@ -505,6 +528,64 @@ async function main() {
   });
 
   console.log(`Demo invitation successfully mapped! URL slug: "${invitation6.slug}"`);
+
+  // 5e. Pre-create Approved Purchase Request, Purchase, and Invitation for Demo slug (Flow)
+  console.log('Creating demo invitation mapping for Flow...');
+  const purchaseRequest7 = await prisma.purchaseRequest.create({
+    data: {
+      userId: admin.id,
+      templateId: template7.id,
+      contactEmail: 'admin@mazoom.app',
+      contactPhone: '+966500000001',
+      status: 'APPROVED',
+    },
+  });
+
+  const purchase7 = await prisma.purchase.create({
+    data: {
+      userId: admin.id,
+      templateId: template7.id,
+      purchaseRequestId: purchaseRequest7.id,
+      slug: 'flow-demo',
+    },
+  });
+
+  const invitation7 = await prisma.invitation.create({
+    data: {
+      purchaseId: purchase7.id,
+      slug: 'flow-demo',
+      eventTitle: 'أحمد & سارة',
+      eventTitleAr: 'أحمد & سارة',
+      eventTitleEn: 'Ahmed & Sarah',
+      eventLocation: 'قاعة السمو، الرياض',
+      eventLocationAr: 'قاعة السمو، الرياض',
+      eventLocationEn: 'Al-Sumou Hall, Riyadh',
+      eventDate: new Date('2027-05-15T18:00:00.000Z'),
+      locationUrl: 'https://maps.google.com/?q=24.7136,46.6753',
+      welcomeText: 'بقلوبٍ يملؤها الفرح والسرور،\nنتشرف بدعوتكم لمشاركتنا فرحة العمر\nوتوثيق عهد الحب والوفاء\n\nفي حفل زفاف أبنائنا\n\nحضوركم يسعدنا ويضفي على ليلتنا بهجة وسروراً ✨',
+      welcomeTextAr: 'بقلوبٍ يملؤها الفرح والسرور،\nنتشرف بدعوتكم لمشاركتنا فرحة العمر\nوتوثيق عهد الحب والوفاء\n\nفي حفل زفاف أبنائنا\n\nحضوركم يسعدنا ويضفي على ليلتنا بهجة وسروراً ✨',
+      welcomeTextEn: 'With hearts full of joy and pleasure,\nWe are honored to invite you to share our lifetime joy\nAnd witness our bond of love and loyalty\n\nAt our children\'s wedding ceremony\n\nYour presence delights us and adds beauty and joy to our night ✨',
+      languageMode: 'both',
+      images: [],
+      musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+      contactName: 'أخو العريس',
+      contactPhone: '+966500000001',
+      allowGuestUploads: true,
+      moments: [],
+      eventDetails: [
+        { text: 'الرجاء تأكيد الحضور في موعد أقصاه 10 مايو', textAr: 'الرجاء تأكيد الحضور في موعد أقصاه 10 مايو', textEn: 'Please confirm attendance by May 10th' },
+        { text: 'نرجو منكم عدم تصوير مقاطع الفيديو لمشاركتنا اللحظات الخاصة بأمان', textAr: 'نرجو منكم عدم تصوير مقاطع الفيديو لمشاركتنا اللحظات الخاصة بأمان', textEn: 'Please refrain from taking videos to preserve our special moments' },
+        { text: 'الدعوة شخصية وخاصة لحاملي الدعوة فقط', textAr: 'الدعوة شخصية وخاصة لحاملي الدعوة فقط', textEn: 'This invitation is personal and strictly for cardholders' }
+      ],
+      eventProgram: [
+        { time: '18:00', title: 'وصول المدعوين واستقبالهم', titleAr: 'وصول المدعوين واستقبالهم', titleEn: 'Guest Arrival & Reception' },
+        { time: '19:00', title: 'مراسم عقد القران والزفة', titleAr: 'مراسم عقد القران والزفة', titleEn: 'Wedding Ceremony & Entrance' },
+        { time: '20:30', title: 'بوفيه العشاء الفاخر', titleAr: 'بوفيه العشاء الفاخر', titleEn: 'Grand Dinner Buffet' }
+      ]
+    },
+  });
+
+  console.log(`Demo invitation successfully mapped! URL slug: "${invitation7.slug}"`);
 
   // 6. Seed testimonials
   console.log('Creating testimonial users, purchases, and testimonials...');
