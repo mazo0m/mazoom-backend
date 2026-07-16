@@ -11,7 +11,7 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import * as express from 'express';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto, GoogleLoginDto } from './dto';
+import { RegisterDto, LoginDto, GoogleLoginDto, RefreshDto } from './dto';
 import { AbuseService } from '../common/services/abuse.service';
 
 /** Shared cookie configuration for access tokens. */
@@ -117,6 +117,8 @@ export class AuthController {
     this.setRefreshTokenCookie(response, result.refreshToken);
     return {
       user: result.user,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
     };
   }
 
@@ -170,6 +172,8 @@ export class AuthController {
     this.setRefreshTokenCookie(response, result.refreshToken);
     return {
       user: result.user,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
     };
   }
 
@@ -201,6 +205,8 @@ export class AuthController {
     this.setRefreshTokenCookie(response, result.refreshToken);
     return {
       user: result.user,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
     };
   }
 
@@ -226,9 +232,10 @@ export class AuthController {
   })
   async refresh(
     @Req() request: express.Request,
+    @Body() dto: RefreshDto,
     @Res({ passthrough: true }) response: express.Response,
   ) {
-    const refreshToken = request.cookies['refreshToken'];
+    const refreshToken = dto.refreshToken || request.cookies['refreshToken'];
     const ip = this.abuseService.extractIp(request);
     const userAgent = request.headers['user-agent'] || '';
     const result = await this.authService.refresh(refreshToken, ip, userAgent);
@@ -236,6 +243,8 @@ export class AuthController {
     this.setRefreshTokenCookie(response, result.refreshToken);
     return {
       user: result.user,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
     };
   }
 
@@ -256,9 +265,10 @@ export class AuthController {
   })
   async logout(
     @Req() request: express.Request,
+    @Body() dto: RefreshDto,
     @Res({ passthrough: true }) response: express.Response,
   ) {
-    const refreshToken = request.cookies['refreshToken'];
+    const refreshToken = dto.refreshToken || request.cookies['refreshToken'];
     const ip = this.abuseService.extractIp(request);
     const userAgent = request.headers['user-agent'] || '';
     await this.authService.logout(refreshToken, ip, userAgent);
