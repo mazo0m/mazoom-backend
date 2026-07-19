@@ -17,8 +17,10 @@ import { InvitationModule } from './invitation/invitation.module';
 import { RsvpModule } from './rsvp/rsvp.module';
 import { UserModule } from './user/user.module';
 import { UploadModule } from './upload/upload.module';
+import { MediaModule } from './media/media.module';
 import { TestimonialModule } from './testimonial/testimonial.module';
 import { HealthModule } from './health/health.module';
+
 
 @Module({
   imports: [
@@ -67,6 +69,7 @@ import { HealthModule } from './health/health.module';
     RsvpModule,
     UserModule,
     UploadModule,
+    MediaModule,
     TestimonialModule,
     HealthModule,
   ],
