@@ -33,28 +33,14 @@ import { HealthModule } from './health/health.module';
       useFactory: async (config: ConfigService) => {
         const redisUrl = config.get<string>('REDIS_URL');
 
-        console.log(
-          redisUrl ? '✅ Redis URL موجود' : '❌ Redis URL غير موجود'
-        );
-
         if (redisUrl) {
           const store = await redisStore({
             url: redisUrl,
             ttl: 60000,
           });
 
-          console.log('✅ Using Redis');
-
-          await store.set('mazoom-test', 'works', 60000);
-
-          const test = await store.get('mazoom-test');
-
-          console.log('Redis test:', test);
-
           return { store };
         }
-
-        console.log('⚠️ Using Memory Cache');
 
         return {
           ttl: 60000,
