@@ -26,7 +26,7 @@ export class MediaService {
     }
 
     // 1. Detect MIME type using signature verification (magic bytes)
-    const detectedMime = detectMimeType(file.buffer);
+    const detectedMime = detectMimeType(file.buffer, file.mimetype);
     if (!detectedMime) {
       throw new BadRequestException(
         'Upload failed: Unsupported or malicious file content detected.',
@@ -38,9 +38,11 @@ export class MediaService {
     let maxLimit: number;
     let fileCategory = 'images';
 
-    if (['image/jpeg', 'image/png', 'image/webp'].includes(detectedMime)) {
+    const isImage = detectedMime.startsWith('image/') || (file.mimetype && file.mimetype.startsWith('image/'));
+
+    if (isImage) {
       type = MediaType.IMAGE;
-      maxLimit = 15 * 1024 * 1024; // 15MB limit for images
+      maxLimit = 20 * 1024 * 1024; // 20MB limit for images
       fileCategory = 'images';
     } else if (['video/mp4', 'video/webm'].includes(detectedMime)) {
       type = MediaType.VIDEO;
@@ -48,11 +50,11 @@ export class MediaService {
       fileCategory = 'videos';
     } else if (['audio/mpeg', 'audio/wav', 'audio/ogg'].includes(detectedMime)) {
       type = MediaType.AUDIO;
-      maxLimit = 15 * 1024 * 1024; // 15MB limit for audio
+      maxLimit = 20 * 1024 * 1024; // 20MB limit for audio
       fileCategory = 'audio';
     } else {
       throw new BadRequestException(
-        'Only jpeg, png, and webp images, mp4 and webm videos, and mp3, wav, and ogg audio files are allowed.',
+        'Invalid media file type.',
       );
     }
 
@@ -60,14 +62,11 @@ export class MediaService {
     if (file.size > maxLimit) {
       const sizeMB = maxLimit / (1024 * 1024);
       throw new BadRequestException(
-        `File size exceeds the allowed limit of ${sizeMB}MB for ${type.toLowerCase()}s.`,
+        `File size exceeds the allowed limit of ${sizeMB}MB.`,
       );
     }
 
-    const safeExt = MIME_TO_EXT[detectedMime];
-    if (!safeExt) {
-      throw new BadRequestException('Could not determine safe file extension.');
-    }
+    const safeExt = MIME_TO_EXT[detectedMime] || `.${detectedMime.split('/')[1] || 'jpg'}`;
 
     // 3. Organise S3 object keys according to requirements
     const uuid = randomUUID();

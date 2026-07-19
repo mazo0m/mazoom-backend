@@ -527,35 +527,20 @@ export class InvitationService {
     // 1. Centralized upload rate limiting
     await this.abuseService.checkUploadLimit(clientIp, invitationId);
 
-    // 2. Strict size limits (5MB limit for guest uploads)
-    if (file.size > 5 * 1024 * 1024) {
-      throw new BadRequestException('File size must not exceed 5MB.');
+    // 2. Size limit: 20MB for images
+    if (file.size > 20 * 1024 * 1024) {
+      throw new BadRequestException('File size must not exceed 20MB.');
     }
 
-    // 3. Detect and validate MIME type via magic bytes
-    const detectedMime = detectMimeType(file.buffer);
-    if (!detectedMime || !['image/jpeg', 'image/png', 'image/webp'].includes(detectedMime)) {
-      throw new BadRequestException(
-        'Only jpeg, png, and webp images are allowed for guest uploads',
-      );
+    // 3. Detect and validate image MIME type
+    const detectedMime = detectMimeType(file.buffer, file.mimetype) || file.mimetype || 'image/jpeg';
+    const isImage = detectedMime.startsWith('image/') || (file.mimetype && file.mimetype.startsWith('image/'));
+    if (!isImage) {
+      throw new BadRequestException('Uploaded file is not a valid image.');
     }
 
-    // 4. Force safe extension
-    const safeExt = MIME_TO_EXT[detectedMime];
-    if (!safeExt) {
-      throw new BadRequestException('Unsupported image file format');
-    }
-
-    // 5. Enforce resolution limits
-    const dimensions = getImageDimensions(file.buffer, detectedMime);
-    if (!dimensions) {
-      throw new BadRequestException('Invalid image structure or corrupt file.');
-    }
-    if (dimensions.width > 4096 || dimensions.height > 4096) {
-      throw new BadRequestException(
-        'Image dimensions must not exceed 4096x4096px.',
-      );
-    }
+    // 4. Determine extension
+    const safeExt = MIME_TO_EXT[detectedMime] || `.${detectedMime.split('/')[1] || 'jpg'}`;
 
     // 6. Verify invitation exists
     const invitation = await this.prisma.invitation.findUnique({
