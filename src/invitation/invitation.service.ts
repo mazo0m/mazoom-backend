@@ -5,6 +5,7 @@ import {
   Injectable,
   NotFoundException,
   Inject,
+  Logger,
 } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
@@ -21,6 +22,9 @@ import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { TooManyRequestsException } from '../common/exceptions/too-many-requests.exception';
 import { AbuseService } from '../common/services/abuse.service';
+import { S3Service } from '../media/s3.service';
+import { MediaType } from '@prisma/client';
+
 
 /** Fields from the DTO that map directly to Prisma update data. */
 const UPDATABLE_STRING_FIELDS = [
@@ -55,7 +59,10 @@ export class InvitationService {
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly abuseService: AbuseService,
+    private readonly s3Service: S3Service,
   ) {}
+
+  private readonly logger = new Logger(InvitationService.name);
 
   /** Standard include clause for invitation responses with template info. */
   private readonly invitationInclude = {
@@ -189,6 +196,42 @@ export class InvitationService {
     }
     if (dto.eventDate !== undefined) {
       updateData.eventDate = new Date(dto.eventDate);
+    }
+    // 4b. Perform automatic S3 storage and DB cleanup for removed images
+    const urlsToRemove: string[] = [];
+
+    if (dto.images !== undefined) {
+      const dtoImages = dto.images;
+      const removedImages = invitation.images.filter(img => !dtoImages.includes(img));
+      urlsToRemove.push(...removedImages);
+    }
+    if (dto.moments !== undefined) {
+      const dtoMoments = dto.moments;
+      const removedMoments = invitation.moments.filter(mom => !dtoMoments.includes(mom));
+      urlsToRemove.push(...removedMoments);
+    }
+
+    if (urlsToRemove.length > 0) {
+      // Find matching media in DB to get keys
+      const mediaRecords = await this.prisma.media.findMany({
+        where: {
+          url: { in: urlsToRemove },
+        },
+      });
+
+      for (const record of mediaRecords) {
+        try {
+          // Delete from S3
+          await this.s3Service.deleteFile(record.key);
+          // Delete from DB
+          await this.prisma.media.delete({
+            where: { id: record.id },
+          });
+        } catch (error) {
+          // Log and continue to not block the invitation update flow if a deletion fails
+          this.logger.error(`Automatic S3 cleanup failed for key ${record.key}:`, error);
+        }
+      }
     }
 
     // 5. Update
@@ -484,16 +527,16 @@ export class InvitationService {
     // 1. Centralized upload rate limiting
     await this.abuseService.checkUploadLimit(clientIp, invitationId);
 
-    // 2. Strict size limits
+    // 2. Strict size limits (5MB limit for guest uploads)
     if (file.size > 5 * 1024 * 1024) {
       throw new BadRequestException('File size must not exceed 5MB.');
     }
 
     // 3. Detect and validate MIME type via magic bytes
     const detectedMime = detectMimeType(file.buffer);
-    if (!detectedMime || !detectedMime.startsWith('image/')) {
+    if (!detectedMime || !['image/jpeg', 'image/png', 'image/webp'].includes(detectedMime)) {
       throw new BadRequestException(
-        'Only images (jpg, png, gif, webp) are allowed for guest uploads',
+        'Only jpeg, png, and webp images are allowed for guest uploads',
       );
     }
 
@@ -539,32 +582,36 @@ export class InvitationService {
       throw new BadRequestException('errors.gallery_limit_reached');
     }
 
-    // Ensure no file is written before full validation passes
     const uniqueName = randomUUID();
-    const filename = `${uniqueName}${safeExt}`;
-    const uploadDir = join(process.cwd(), 'public', 'uploads');
+    const key = `guest-moments/${invitationId}/images/${uniqueName}${safeExt}`;
 
-    if (!existsSync(uploadDir)) {
-      mkdirSync(uploadDir, { recursive: true });
-    }
+    // Upload directly to S3
+    const fileUrl = await this.s3Service.uploadFile(file.buffer, key, detectedMime);
 
-    const filePath = join(uploadDir, filename);
-    writeFileSync(filePath, file.buffer);
-
-    const fileUrl = `/public/uploads/${filename}`;
+    // Save metadata in DB
+    await this.prisma.media.create({
+      data: {
+        url: fileUrl,
+        key,
+        type: MediaType.IMAGE,
+        mimeType: detectedMime,
+        size: file.size,
+      },
+    });
 
     // 8. Automatically append the image to the moments list of this invitation
-    await this.prisma.invitation.update({
+    const updated = await this.prisma.invitation.update({
       where: { id: invitationId },
       data: {
         moments: { push: fileUrl },
       },
+      include: this.invitationInclude,
     });
 
     // 9. Invalidate caches for this invitation
     await this.cacheManager.del(`invitations:slug:${invitation.slug}`);
 
-    return { url: fileUrl };
+    return this.mapInvitationResponse(updated) as any;
   }
 
   /**

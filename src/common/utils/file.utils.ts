@@ -7,7 +7,10 @@ export const MIME_TO_EXT: Record<string, string> = {
   'audio/mpeg': '.mp3',
   'audio/wav': '.wav',
   'audio/ogg': '.ogg',
+  'video/mp4': '.mp4',
+  'video/webm': '.webm',
 };
+
 
 /** Detect MIME type based on file magic bytes. */
 export function detectMimeType(buffer: Buffer): string | null {
@@ -75,6 +78,28 @@ export function detectMimeType(buffer: Buffer): string | null {
     (buffer[1] === 0xfb || buffer[1] === 0xf3 || buffer[1] === 0xf2)
   ) {
     return 'audio/mpeg';
+  }
+
+  // 7. Check WebM: EBML header (1A 45 DF A3)
+  if (
+    buffer.length >= 4 &&
+    buffer[0] === 0x1a &&
+    buffer[1] === 0x45 &&
+    buffer[2] === 0xdf &&
+    buffer[3] === 0xa3
+  ) {
+    return 'video/webm';
+  }
+
+  // 8. Check MP4: ftyp box signature at offset 4
+  if (
+    buffer.length >= 8 &&
+    buffer[4] === 0x66 && // 'f'
+    buffer[5] === 0x74 && // 't'
+    buffer[6] === 0x79 && // 'y'
+    buffer[7] === 0x70    // 'p'
+  ) {
+    return 'video/mp4';
   }
 
   return null;
