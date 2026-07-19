@@ -66,6 +66,13 @@ export class S3Service {
   }
 
   getPublicUrl(key: string): string {
-    return `https://${this.bucketName}.s3.${this.region}.amazonaws.com/${key}`;
+    const cleanKey = key.replace(/^\/+/, '');
+    const cloudFrontUrl =
+      this.configService.get<string>('CLOUDFRONT_URL') ||
+      process.env.CLOUDFRONT_URL ||
+      'https://d2d6zix8q0a7b9.cloudfront.net';
+
+    const baseUrl = cloudFrontUrl.replace(/\/+$/, '');
+    return `${baseUrl}/${cleanKey}`;
   }
 }

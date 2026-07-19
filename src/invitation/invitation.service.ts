@@ -617,12 +617,46 @@ export class InvitationService {
   }
 
   /**
-   * Maps database output to a clean API response structure.
+  /**
+   * Maps database output to a clean API response structure,
+   * ensuring all media URLs are strictly formatted as CloudFront CDN URLs.
    */
   private mapInvitationResponse(invitation: any) {
     const { purchase, rsvps, ...invitationFields } = invitation;
+
+    const cloudFrontUrl = (
+      process.env.CLOUDFRONT_URL || 'https://d2d6zix8q0a7b9.cloudfront.net'
+    ).replace(/\/+$/, '');
+    const s3Domain =
+      'https://mazoom-media-storage-645819132086-eu-central-1-an.s3.eu-central-1.amazonaws.com';
+
+    const sanitizeUrl = (url: string) => {
+      if (!url) return url;
+      const clean = url.split('?')[0]; // Strip presigned query string parameters
+      if (clean.startsWith(s3Domain)) {
+        return clean.replace(s3Domain, cloudFrontUrl);
+      }
+      if (clean.includes('.s3.') && clean.includes('.amazonaws.com/')) {
+        const parts = clean.split('.amazonaws.com/');
+        if (parts.length === 2) {
+          return `${cloudFrontUrl}/${parts[1].replace(/^\/+/, '')}`;
+        }
+      }
+      return clean;
+    };
+
+    const images = Array.isArray(invitationFields.images)
+      ? invitationFields.images.map(sanitizeUrl)
+      : invitationFields.images;
+
+    const moments = Array.isArray(invitationFields.moments)
+      ? invitationFields.moments.map(sanitizeUrl)
+      : invitationFields.moments;
+
     return {
       ...invitationFields,
+      images,
+      moments,
       userId: purchase?.userId,
       templateId: purchase?.templateId,
       template: purchase?.template,
