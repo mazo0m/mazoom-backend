@@ -4,10 +4,16 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Put,
   Post,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+  Req,
 } from '@nestjs/common';
+import * as express from 'express';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -15,16 +21,28 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { Throttle } from '@nestjs/throttler';
 import { Role } from '@prisma/client';
-import { JwtAuthGuard, RolesGuard } from '../auth/guards';
+import { JwtAuthGuard, OptionalJwtAuthGuard, RolesGuard } from '../auth/guards';
 import { Roles, GetUser } from '../auth/decorators';
 import { InvitationService } from './invitation.service';
-import { CreateInvitationDto, UpdateInvitationDto } from './dto';
+import { AbuseService } from '../common/services/abuse.service';
+import {
+  CreateInvitationDto,
+  UpdateInvitationDto,
+  AddMomentDto,
+  ToggleStatusDto,
+} from './dto';
 
 @ApiTags('Invitations')
 @Controller('invitations')
 export class InvitationController {
-  constructor(private readonly invitationService: InvitationService) {}
+  constructor(
+    private readonly invitationService: InvitationService,
+    private readonly abuseService: AbuseService,
+  ) {}
 
   /**
    * POST /invitations
@@ -102,16 +120,16 @@ export class InvitationController {
 
   /**
    * PUT /invitations/:id
-   * Updates an existing invitation. Client only (must be the owner).
+   * Updates an existing invitation. Client (must be the owner) or Admin.
    */
   @Put(':id')
-  @Roles(Role.CLIENT)
+  @Roles(Role.CLIENT, Role.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Update an invitation',
     description:
-      'Updates an existing invitation. Only the invitation owner (client) can update it. ' +
+      'Updates an existing invitation. Only the invitation owner (client) or an admin can update it. ' +
       'The templateId cannot be changed.',
   })
   @ApiParam({
@@ -133,17 +151,82 @@ export class InvitationController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @GetUser('id') userId: string,
+    @GetUser('role') role: string,
     @Body() dto: UpdateInvitationDto,
   ) {
-    return this.invitationService.update(id, userId, dto);
+    return this.invitationService.update(id, userId, role, dto);
+  }
+
+  /**
+   * POST /invitations/:id/moments
+   * Adds a moment (photo link) to the invitation.
+   * Uses optional auth — authenticated users get ownership checks,
+   * anonymous guests are allowed if guest uploads are enabled.
+   */
+  @Post(':id/moments')
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiOperation({
+    summary: 'Add a photo moment to the invitation',
+    description: 'Enables guests or hosts to add photos/moments.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID of the invitation',
+    example: 'e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b',
+  })
+  addMoment(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AddMomentDto,
+    @GetUser('id') userId?: string,
+  ) {
+    return this.invitationService.addMoment(id, dto.url, userId);
+  }
+
+  /**
+   * POST /invitations/:id/guest-upload
+   * Public endpoint — allows anonymous guests to upload images to invitation moments.
+   * Rate limited to prevent upload spam and DDoS vectors.
+   */
+  @Throttle({ default: { ttl: 60000, limit: 3 } }) // Limit to 3 files per minute per IP
+  @Post(':id/guest-upload')
+  @ApiOperation({
+    summary: 'Upload an image as a guest (no auth required)',
+    description:
+      'Allows anonymous guests to upload photos/moments if permitted by the invitation configuration.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID of the invitation',
+    example: 'e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b',
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB size limit
+      },
+    }),
+  )
+  async guestUpload(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: express.Request,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+    const ip = this.abuseService.extractIp(req);
+    return this.invitationService.guestUpload(id, file, ip);
   }
 
   /**
    * GET /invitations/slug/:slug
    * Public endpoint — used by the frontend to fetch invitation data
    * when a guest opens a shareable link (e.g. mazoom.com/invite/ahmed-wedding).
+   * Uses optional auth to allow owner/admin access to deactivated invitations.
    */
   @Get('slug/:slug')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: 'Get invitation by slug (Public)',
     description:
@@ -182,8 +265,14 @@ export class InvitationController {
     },
   })
   @ApiResponse({ status: 404, description: 'Invitation not found' })
-  findBySlug(@Param('slug') slug: string) {
-    return this.invitationService.findBySlug(slug);
+  findBySlug(
+    @Param('slug') slug: string,
+    @Req() req: express.Request,
+    @GetUser('id') userId?: string,
+    @GetUser('role') role?: Role,
+  ) {
+    const ip = this.abuseService.extractIp(req);
+    return this.invitationService.findBySlug(slug, ip, userId, role);
   }
 
   /**
@@ -245,5 +334,29 @@ export class InvitationController {
     @GetUser('id') userId: string,
   ) {
     return this.invitationService.findRsvps(id, userId);
+  }
+
+  /**
+   * PATCH /invitations/:id/status
+   * Toggles invitation activation status. Admin only.
+   */
+  @Patch(':id/status')
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Toggle invitation activation status (Admin)',
+    description:
+      'Allows admins to activate/deactivate a user invitation. Requires ADMIN role.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Invitation status toggled successfully',
+  })
+  toggleStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ToggleStatusDto,
+  ) {
+    return this.invitationService.toggleStatus(id, dto.isActive);
   }
 }

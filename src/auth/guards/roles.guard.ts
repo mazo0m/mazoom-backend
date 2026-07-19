@@ -32,7 +32,13 @@ export class RolesGuard implements CanActivate {
     }
 
     // 3. Check that the authenticated user's role is in the allowed list
-    const { user } = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
+
+    if (!user) {
+      return false;
+    }
+
     return requiredRoles.includes(user.role);
   }
 }

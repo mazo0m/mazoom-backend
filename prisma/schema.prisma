@@ -1,8 +1,3 @@
-// ============================================================================
-// Mazoom — Interactive Digital Invitation Web App
-// Prisma Schema Definition
-// ============================================================================
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,44 +6,21 @@ datasource db {
   provider = "postgresql"
 }
 
-// ============================================================================
-// Enums
-// ============================================================================
-
-enum Role {
-  ADMIN
-  CLIENT
-}
-
-enum RequestStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-enum RsvpAttendance {
-  YES
-  NO
-}
-
-// ============================================================================
-// Models
-// ============================================================================
-
 /// Registered users — either platform admins or clients who create invitations.
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  firstName    String   @map("first_name")
-  lastName     String   @map("last_name")
-  phoneNumber  String   @unique @map("phone_number")
-  role         Role     @default(CLIENT)
-  createdAt    DateTime @default(now()) @map("created_at")
-
-  // Relations
+  id               String            @id @default(uuid()) @db.Uuid
+  email            String            @unique
+  passwordHash     String?           @map("password_hash")
+  role             Role              @default(CLIENT)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  firstName        String            @map("first_name")
+  lastName         String            @map("last_name")
+  phoneNumber      String?           @unique @map("phone_number")
+  isActive         Boolean           @default(true) @map("is_active")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
   purchaseRequests PurchaseRequest[]
   purchases        Purchase[]
+  refreshTokens    RefreshToken[]
 
   @@map("users")
 }
@@ -56,20 +28,27 @@ model User {
 /// Invitation design templates managed by admins.
 /// Clients browse and select a template to build their invitation.
 model Template {
-  id             String   @id @default(uuid()) @db.Uuid
-  title          String
-  description    String   @db.Text
-  previewImage   String   @map("preview_image")
-  price          Decimal  @db.Decimal(10, 2)
-  editableFields Json     @map("editable_fields")
-  demoLink       String?  @map("demo_link")
-  isPremium      Boolean  @default(false) @map("is_premium")
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  // Relations
+  id               String            @id @default(uuid()) @db.Uuid
+  title            String
+  demoLink         String?           @map("demo_link")
+  price            Decimal           @db.Decimal(10, 2)
+  isPremium        Boolean           @default(false) @map("is_premium")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  category         TemplateCategory  @default(Weddings)
+  description      String
+  descriptionAr    String?           @map("description_ar")
+  descriptionEn    String?           @map("description_en")
+  editableFields   Json              @map("editable_fields")
+  isActive         Boolean           @default(true) @map("is_active")
+  previewImage     String            @map("preview_image")
+  titleAr          String?           @map("title_ar")
+  titleEn          String?           @map("title_en")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
   purchaseRequests PurchaseRequest[]
   purchases        Purchase[]
 
+  @@index([isActive])
+  @@index([category])
   @@map("templates")
 }
 
@@ -81,16 +60,18 @@ model PurchaseRequest {
   templateId   String        @map("template_id") @db.Uuid
   contactEmail String        @map("contact_email")
   contactPhone String        @map("contact_phone")
+  languageMode String        @default("both") @map("language_mode")
   status       RequestStatus @default(PENDING)
   createdAt    DateTime      @default(now()) @map("created_at")
-
-  // Relations
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  template Template  @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  purchase Purchase?
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  template     Template      @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purchase     Purchase?
 
   @@index([userId])
   @@index([templateId])
+  @@index([status])
+  @@index([userId, status])
   @@map("purchase_requests")
 }
 
@@ -101,13 +82,14 @@ model Purchase {
   templateId        String          @map("template_id") @db.Uuid
   purchaseRequestId String          @unique @map("purchase_request_id") @db.Uuid
   slug              String          @unique
+  languageMode      String          @default("both") @map("language_mode")
   createdAt         DateTime        @default(now()) @map("created_at")
-
-  // Relations
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  template        Template        @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  purchaseRequest PurchaseRequest @relation(fields: [purchaseRequestId], references: [id], onDelete: Cascade)
-  invitation      Invitation?
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  invitation        Invitation?
+  purchaseRequest   PurchaseRequest @relation(fields: [purchaseRequestId], references: [id], onDelete: Cascade)
+  template          Template        @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  testimonial       Testimonial?
 
   @@index([userId])
   @@index([templateId])
@@ -116,24 +98,39 @@ model Purchase {
 
 /// A published digital invitation created by a client using a chosen template purchase.
 model Invitation {
-  id            String   @id @default(uuid()) @db.Uuid
-  purchaseId    String   @unique @map("purchase_id") @db.Uuid
-  slug          String   @unique
-  eventTitle    String   @map("event_title")
-  eventDate     DateTime @map("event_date")
-  eventLocation String   @map("event_location")
-  locationUrl   String?  @map("location_url")
-  welcomeText   String?  @db.Text @map("welcome_text")
-  images        String[]
-  musicUrl      String?  @map("music_url")
-  createdAt     DateTime @default(now()) @map("created_at")
-
-  // Relations
-  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
-  rsvps    RSVP[]
+  id                String   @id @default(uuid()) @db.Uuid
+  slug              String   @unique
+  eventDate         DateTime @map("event_date")
+  locationUrl       String?  @map("location_url")
+  welcomeText       String?  @map("welcome_text")
+  images            String[]
+  musicUrl          String?  @map("music_url")
+  createdAt         DateTime @default(now()) @map("created_at")
+  allowGuestUploads Boolean  @default(true) @map("allow_guest_uploads")
+  allowCompanions   Boolean  @default(true) @map("allow_companions")
+  contactName       String?  @map("contact_name")
+  contactPhone      String?  @map("contact_phone")
+  eventDetails      Json[]   @default([]) @map("event_details")
+  eventLocation     String   @map("event_location")
+  eventLocationAr   String?  @map("event_location_ar")
+  eventLocationEn   String?  @map("event_location_en")
+  eventProgram      Json[]   @default([]) @map("event_program")
+  eventTitle        String   @map("event_title")
+  eventTitleAr      String?  @map("event_title_ar")
+  eventTitleEn      String?  @map("event_title_en")
+  isActive          Boolean  @default(true) @map("is_active")
+  languageMode      String   @default("both") @map("language_mode")
+  moments           String[] @default([])
+  purchaseId        String   @unique @map("purchase_id") @db.Uuid
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  welcomeTextAr     String?  @map("welcome_text_ar")
+  welcomeTextEn     String?  @map("welcome_text_en")
+  purchase          Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  rsvps             RSVP[]
 
   @@index([purchaseId])
   @@index([slug])
+  @@index([isActive])
   @@map("invitations")
 }
 
@@ -141,15 +138,89 @@ model Invitation {
 model RSVP {
   id           String         @id @default(uuid()) @db.Uuid
   invitationId String         @map("invitation_id") @db.Uuid
-  name         String
+  createdAt    DateTime       @default(now()) @map("created_at")
   attendance   RsvpAttendance
   guestsCount  Int            @default(0) @map("guests_count")
-  message      String?        @db.Text
-  createdAt    DateTime       @default(now()) @map("created_at")
-
-  // Relations
-  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  message      String?
+  name         String
+  invitation   Invitation     @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@index([invitationId])
   @@map("rsvps")
+}
+
+/// Client testimonials / reviews for templates/services
+model Testimonial {
+  id         String   @id @default(uuid()) @db.Uuid
+  purchaseId String   @unique @map("purchase_id") @db.Uuid
+  rating     Int
+  comment    String
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  isDeleted  Boolean  @default(false) @map("is_deleted")
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  @@index([isDeleted])
+  @@map("testimonials")
+}
+
+/// Refresh tokens for tracking user sessions and token rotation.
+model RefreshToken {
+  id            String    @id @default(uuid()) @db.Uuid
+  tokenHash     String    @unique @map("token_hash")
+  userId        String    @map("user_id") @db.Uuid
+  expiresAt     DateTime  @map("expires_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  isRevoked     Boolean   @default(false) @map("is_revoked")
+  replacedBy    String?   @map("replaced_by")
+  revokedAt     DateTime? @map("revoked_at")
+  revokedReason String?   @map("revoked_reason")
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+/// Durable audit logs for tracking security-sensitive actions.
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  action    String
+  ip        String?
+  userAgent String?  @map("user_agent")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}
+
+enum Role {
+  ADMIN
+  CLIENT
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum RsvpAttendance {
+  YES
+  NO
+}
+
+enum TemplateCategory {
+  Weddings          @map("Weddings")
+  BridalShowers     @map("Bridal Showers")
+  EngagementParties @map("Engagement Parties")
+  Birthdays         @map("Birthdays")
+  CorporateEvents   @map("Corporate Events")
+}
+
+enum RefreshTokenRevokeReason {
+  ROTATED
+  LOGOUT
+  REUSE_ATTEMPT
 }

@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
+  IsEnum,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -9,6 +10,7 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { TemplateCategory } from '@prisma/client';
 
 export class CreateTemplateDto {
   @ApiProperty({
@@ -19,6 +21,22 @@ export class CreateTemplateDto {
   @IsNotEmpty({ message: 'Template title is required' })
   title: string;
 
+  @ApiPropertyOptional({
+    description: 'Display title in Arabic',
+    example: 'حفل الزفاف الذهبي الملكي',
+  })
+  @IsString()
+  @IsOptional()
+  titleAr?: string;
+
+  @ApiPropertyOptional({
+    description: 'Display title in English',
+    example: 'Royal Gold Wedding',
+  })
+  @IsString()
+  @IsOptional()
+  titleEn?: string;
+
   @ApiProperty({
     description: 'Detailed description of the invitation template',
     example:
@@ -28,12 +46,28 @@ export class CreateTemplateDto {
   @IsNotEmpty({ message: 'Description is required' })
   description: string;
 
-  @ApiProperty({
-    description: 'URL of the template preview image',
-    example: 'https://cdn.mazoom.app/templates/royal-gold.jpg',
+  @ApiPropertyOptional({
+    description: 'Detailed description in Arabic',
+    example: 'زفاف ملكي فاخر باللون الذهبي',
   })
-  @IsUrl({}, { message: 'Preview image URL must be a valid URL' })
-  @IsNotEmpty({ message: 'Preview image URL is required' })
+  @IsString()
+  @IsOptional()
+  descriptionAr?: string;
+
+  @ApiPropertyOptional({
+    description: 'Detailed description in English',
+    example: 'A luxurious gold-themed wedding invitation',
+  })
+  @IsString()
+  @IsOptional()
+  descriptionEn?: string;
+
+  @ApiProperty({
+    description: 'Name or URL of the template preview image',
+    example: '/images/royal-gold.jpg',
+  })
+  @IsString()
+  @IsNotEmpty({ message: 'Preview image name or URL is required' })
   previewImage: string;
 
   @ApiProperty({
@@ -64,7 +98,7 @@ export class CreateTemplateDto {
     example: 'https://demo.mazoom.app/royal-gold',
   })
   @IsOptional()
-  @IsUrl({}, { message: 'Demo link must be a valid URL' })
+  @IsString({ message: 'Demo link must be a string' })
   demoLink?: string;
 
   @ApiPropertyOptional({
@@ -75,4 +109,15 @@ export class CreateTemplateDto {
   @IsOptional()
   @IsBoolean({ message: 'isPremium must be a boolean value' })
   isPremium?: boolean;
+
+  @ApiProperty({
+    description: 'Category of the invitation template',
+    enum: TemplateCategory,
+    example: 'Weddings',
+  })
+  @IsEnum(TemplateCategory, {
+    message: 'Category must be a valid TemplateCategory enum value',
+  })
+  @IsNotEmpty({ message: 'Category is required' })
+  category: TemplateCategory;
 }

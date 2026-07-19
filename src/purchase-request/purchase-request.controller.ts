@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -135,5 +136,39 @@ export class PurchaseRequestController {
     @Body() dto: UpdatePurchaseRequestStatusDto,
   ) {
     return this.purchaseRequestService.updateStatus(id, dto);
+  }
+
+  /**
+   * PATCH /purchase-requests/:id/cancel
+   * Cancels a pending purchase request. Client or Admin.
+   */
+  @Patch(':id/cancel')
+  @Roles(Role.CLIENT, Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiOperation({
+    summary: 'Cancel a pending purchase request',
+    description:
+      'Allows a client to cancel their own purchase request if it is still PENDING, or an admin to override. Requires CLIENT or ADMIN role.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID of the purchase request',
+    example: 'd4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Purchase request cancelled successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Request cannot be cancelled as it is already processed',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized — missing or invalid JWT',
+  })
+  @ApiResponse({ status: 404, description: 'Purchase request not found' })
+  cancel(@GetUser() user: any, @Param('id', ParseUUIDPipe) id: string) {
+    return this.purchaseRequestService.cancel(user.id, user.role, id);
   }
 }

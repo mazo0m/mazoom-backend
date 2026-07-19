@@ -1,21 +1,40 @@
-import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { UserService } from './user.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { CreateUserDto, UpdateUserByAdminDto } from './dto/admin-user.dto';
+import * as express from 'express';
+import { AbuseService } from '../common/services/abuse.service';
 
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly abuseService: AbuseService,
+  ) {}
 
   @Get('profile')
   @ApiOperation({
@@ -58,7 +77,61 @@ export class UserController {
     description:
       'Conflict — email or phone number already in use by another account',
   })
-  updateProfile(@GetUser('id') userId: string, @Body() dto: UpdateProfileDto) {
-    return this.userService.updateProfile(userId, dto);
+  updateProfile(
+    @GetUser('id') userId: string,
+    @Body() dto: UpdateProfileDto,
+    @Req() request: express.Request,
+  ) {
+    const ip = this.abuseService.extractIp(request);
+    const userAgent = request.headers['user-agent'] || '';
+    return this.userService.updateProfile(userId, dto, ip, userAgent);
+  }
+
+  @Get()
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiOperation({
+    summary: 'Get all users (Admin)',
+    description:
+      'Returns a list of all registered users on the platform. Requires ADMIN role.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of all users retrieved successfully',
+  })
+  findAll() {
+    return this.userService.findAll();
+  }
+
+  @Post()
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiOperation({
+    summary: 'Create a user (Admin)',
+    description:
+      'Creates a new user account with client or admin role. Requires ADMIN role.',
+  })
+  @ApiResponse({ status: 201, description: 'User created successfully' })
+  createUser(@Body() dto: CreateUserDto) {
+    return this.userService.createUserByAdmin(dto);
+  }
+
+  @Put(':id')
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiOperation({
+    summary: 'Update a user (Admin)',
+    description:
+      'Updates registration details or role of a user. Requires ADMIN role.',
+  })
+  @ApiResponse({ status: 200, description: 'User updated successfully' })
+  updateUser(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateUserByAdminDto,
+    @Req() request: express.Request,
+  ) {
+    const ip = this.abuseService.extractIp(request);
+    const userAgent = request.headers['user-agent'] || '';
+    return this.userService.updateUserByAdmin(id, dto, ip, userAgent);
   }
 }

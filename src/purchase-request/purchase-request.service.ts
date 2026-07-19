@@ -27,7 +27,7 @@ export class PurchaseRequestService {
 
     if (!template) {
       throw new NotFoundException(
-        `Template with ID "${dto.templateId}" not found`,
+        `errors.template_not_found|${dto.templateId}`,
       );
     }
 
@@ -38,6 +38,7 @@ export class PurchaseRequestService {
         templateId: dto.templateId,
         contactEmail: dto.contactEmail,
         contactPhone: dto.contactPhone,
+        languageMode: dto.languageMode || 'both',
         status: RequestStatus.PENDING,
       },
       include: {
@@ -51,6 +52,23 @@ export class PurchaseRequestService {
         },
       },
     });
+
+    // 3. Update User phone number in profile if not already set (e.g. Google auth user)
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (user && (!user.phoneNumber || user.phoneNumber.trim() === '')) {
+      // Check if phone number is already in use by another user to avoid unique constraint error
+      const existingPhoneUser = await this.prisma.user.findFirst({
+        where: { phoneNumber: dto.contactPhone.trim() },
+      });
+      if (!existingPhoneUser) {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: { phoneNumber: dto.contactPhone.trim() },
+        });
+      }
+    }
 
     return request;
   }
@@ -69,6 +87,11 @@ export class PurchaseRequestService {
             title: true,
             previewImage: true,
             price: true,
+          },
+        },
+        purchase: {
+          include: {
+            testimonial: true,
           },
         },
       },
@@ -98,6 +121,12 @@ export class PurchaseRequestService {
             title: true,
             previewImage: true,
             price: true,
+            editableFields: true,
+          },
+        },
+        purchase: {
+          include: {
+            invitation: true,
           },
         },
       },
@@ -116,13 +145,13 @@ export class PurchaseRequestService {
     });
 
     if (!request) {
-      throw new NotFoundException(`Purchase request with ID "${id}" not found`);
+      throw new NotFoundException(`errors.purchase_request_not_found|${id}`);
     }
 
     // 2. Only PENDING requests can be transitioned
     if (request.status !== RequestStatus.PENDING) {
       throw new BadRequestException(
-        `Purchase request has already been ${request.status.toLowerCase()}. Only PENDING requests can be updated.`,
+        `errors.purchase_request_processed|${request.status.toLowerCase()}`,
       );
     }
 
@@ -160,11 +189,41 @@ export class PurchaseRequestService {
             templateId: request.templateId,
             purchaseRequestId: request.id,
             slug,
+            languageMode: request.languageMode,
           },
         });
       }
 
       return updatedRequest;
+    });
+  }
+
+  // ──────────────────────────────────────────────
+  // Cancel Purchase Request (Client only)
+  // ──────────────────────────────────────────────
+
+  async cancel(userId: string, userRole: string, id: string) {
+    const request = await this.prisma.purchaseRequest.findUnique({
+      where: { id },
+    });
+
+    if (!request) {
+      throw new NotFoundException(`errors.purchase_request_not_found|${id}`);
+    }
+
+    if (request.userId !== userId && userRole !== 'ADMIN') {
+      throw new BadRequestException('errors.unauthorized_request');
+    }
+
+    if (request.status !== RequestStatus.PENDING) {
+      throw new BadRequestException(
+        `errors.purchase_request_processed|${request.status.toLowerCase()}`,
+      );
+    }
+
+    return this.prisma.purchaseRequest.update({
+      where: { id },
+      data: { status: RequestStatus.CANCELLED },
     });
   }
 }
