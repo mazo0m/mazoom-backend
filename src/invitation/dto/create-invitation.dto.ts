@@ -315,6 +315,14 @@ export class CreateInvitationDto {
   allowGuestUploads?: boolean;
 
   @ApiPropertyOptional({
+    description: 'Whether to show the guest moments/photos feed to guests',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  showMoments?: boolean;
+
+  @ApiPropertyOptional({
     description: 'Whether guests are allowed to add companions to their RSVP response',
     example: true,
   })

@@ -107,6 +107,7 @@ model Invitation {
   musicUrl          String?  @map("music_url")
   createdAt         DateTime @default(now()) @map("created_at")
   allowGuestUploads Boolean  @default(true) @map("allow_guest_uploads")
+  showMoments       Boolean  @default(true) @map("show_moments")
   allowCompanions   Boolean  @default(true) @map("allow_companions")
   contactName       String?  @map("contact_name")
   contactPhone      String?  @map("contact_phone")

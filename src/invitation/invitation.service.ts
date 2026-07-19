@@ -47,7 +47,7 @@ const UPDATABLE_ARRAY_FIELDS = [
   'eventDetails',
   'moments',
 ] as const;
-const UPDATABLE_BOOLEAN_FIELDS = ['isActive', 'allowGuestUploads', 'allowCompanions'] as const;
+const UPDATABLE_BOOLEAN_FIELDS = ['isActive', 'allowGuestUploads', 'showMoments', 'allowCompanions'] as const;
 
 @Injectable()
 export class InvitationService {
@@ -127,6 +127,7 @@ export class InvitationService {
         contactName: dto.contactName,
         contactPhone: dto.contactPhone,
         allowGuestUploads: dto.allowGuestUploads ?? true,
+        showMoments: dto.showMoments ?? true,
         allowCompanions: dto.allowCompanions ?? true,
         moments: dto.moments ?? [],
       },
