@@ -23,11 +23,6 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // ── Static Assets ─────────────────────────────────────────────────
-  const uploadsDir = join(process.cwd(), 'public', 'uploads');
-  if (!existsSync(uploadsDir)) {
-    mkdirSync(uploadsDir, { recursive: true });
-  }
-
   app.useStaticAssets(join(process.cwd(), 'public'), {
     prefix: '/public/',
     setHeaders: (res, path) => {

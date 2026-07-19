@@ -203,7 +203,7 @@ export class InvitationController {
     FileInterceptor('file', {
       storage: memoryStorage(),
       limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB size limit
+        fileSize: 50 * 1024 * 1024, // 50MB limit at Multer level
       },
     }),
   )

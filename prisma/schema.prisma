@@ -227,3 +227,22 @@ enum RefreshTokenRevokeReason {
   LOGOUT
   REUSE_ATTEMPT
 }
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  AUDIO
+}
+
+model Media {
+  id        String    @id @default(uuid()) @db.Uuid
+  url       String
+  key       String    @unique
+  type      MediaType
+  mimeType  String    @map("mime_type")
+  size      Int       // Size in bytes
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("media")
+}
+
