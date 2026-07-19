@@ -4,6 +4,7 @@ import {
   Inject,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
@@ -106,5 +107,63 @@ export class RsvpService {
     await this.cacheManager.del(`invitations:slug:${invitation.slug}`);
 
     return rsvp;
+  }
+
+  // ──────────────────────────────────────────────
+  // Toggle guestbook message visibility (Client only — owner)
+  // ──────────────────────────────────────────────
+
+  async toggleHide(rsvpId: string, userId: string, userRole: string) {
+    const rsvp = await this.prisma.rSVP.findUnique({
+      where: { id: rsvpId },
+      include: { invitation: { include: { purchase: true } } },
+    });
+
+    if (!rsvp) {
+      throw new NotFoundException(`errors.rsvp_not_found|RSVP not found`);
+    }
+
+    if (rsvp.invitation.purchase.userId !== userId && userRole !== 'ADMIN') {
+      throw new ForbiddenException('errors.unauthorized_rsvp_edit');
+    }
+
+    const updated = await this.prisma.rSVP.update({
+      where: { id: rsvpId },
+      data: { isHidden: !rsvp.isHidden },
+    });
+
+    // Invalidate caches so updates reflect instantly
+    await this.cacheManager.del(`invitations:slug:${rsvp.invitation.slug}`);
+
+    return updated;
+  }
+
+  // ──────────────────────────────────────────────
+  // Soft delete RSVP (Client only — owner)
+  // ──────────────────────────────────────────────
+
+  async softDelete(rsvpId: string, userId: string, userRole: string) {
+    const rsvp = await this.prisma.rSVP.findUnique({
+      where: { id: rsvpId },
+      include: { invitation: { include: { purchase: true } } },
+    });
+
+    if (!rsvp) {
+      throw new NotFoundException(`errors.rsvp_not_found|RSVP not found`);
+    }
+
+    if (rsvp.invitation.purchase.userId !== userId && userRole !== 'ADMIN') {
+      throw new ForbiddenException('errors.unauthorized_rsvp_delete');
+    }
+
+    const updated = await this.prisma.rSVP.update({
+      where: { id: rsvpId },
+      data: { isDeleted: true },
+    });
+
+    // Invalidate caches so statistics and lists update instantly
+    await this.cacheManager.del(`invitations:slug:${rsvp.invitation.slug}`);
+
+    return updated;
   }
 }

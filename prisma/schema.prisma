@@ -143,6 +143,8 @@ model RSVP {
   guestsCount  Int            @default(0) @map("guests_count")
   message      String?
   name         String
+  isDeleted    Boolean        @default(false) @map("is_deleted")
+  isHidden     Boolean        @default(false) @map("is_hidden")
   invitation   Invitation     @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@index([invitationId])

@@ -1,5 +1,7 @@
-import { Body, Controller, Post, Req } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Param, ParseUUIDPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards';
+import { GetUser } from '../auth/decorators';
 import { Throttle } from '@nestjs/throttler';
 import * as express from 'express';
 import { RsvpService } from './rsvp.service';
@@ -60,5 +62,51 @@ export class RsvpController {
     const ip = this.abuseService.extractIp(req);
     const idempotencyKey = req.headers['x-idempotency-key']?.toString();
     return this.rsvpService.create(dto, ip, idempotencyKey);
+  }
+
+  /**
+   * PATCH /rsvp/:id/toggle-hide
+   * Client (owner) or Admin only.
+   */
+  @Patch(':id/toggle-hide')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Toggle RSVP visibility (Client/Admin)',
+    description: 'Toggles isHidden property of a guest RSVP. Requires JWT token.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'RSVP visibility toggled successfully',
+  })
+  toggleHide(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetUser('id') userId: string,
+    @GetUser('role') userRole: string,
+  ) {
+    return this.rsvpService.toggleHide(id, userId, userRole);
+  }
+
+  /**
+   * DELETE /rsvp/:id
+   * Client (owner) or Admin only.
+   */
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Soft delete an RSVP (Client/Admin)',
+    description: 'Sets isDeleted to true for a guest RSVP. Requires JWT token.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'RSVP soft-deleted successfully',
+  })
+  softDelete(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetUser('id') userId: string,
+    @GetUser('role') userRole: string,
+  ) {
+    return this.rsvpService.softDelete(id, userId, userRole);
   }
 }

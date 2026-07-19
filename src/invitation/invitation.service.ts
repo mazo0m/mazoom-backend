@@ -251,6 +251,10 @@ export class InvitationService {
             },
           },
           rsvps: {
+            where: {
+              isDeleted: false,
+              isHidden: false,
+            },
             select: {
               name: true,
               message: true,
@@ -334,9 +338,9 @@ export class InvitationService {
       throw new ForbiddenException('errors.unauthorized_rsvp');
     }
 
-    // 3. Fetch all RSVPs
+    // 3. Fetch active RSVPs (exclude soft-deleted ones)
     const rsvps = await this.prisma.rSVP.findMany({
-      where: { invitationId },
+      where: { invitationId, isDeleted: false },
       orderBy: { createdAt: 'desc' },
     });
 
