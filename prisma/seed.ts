@@ -54,6 +54,20 @@ async function main() {
 
   // 3. Create the templates
   console.log('Creating templates...');
+
+  const getEditableFields = (groomAr: string, brideAr: string, locationAr: string, locationEn: string) => ({
+    groomName: { type: 'string', labelAr: 'اسم العريس', labelEn: "Groom's Name", defaultAr: groomAr, defaultEn: 'Groom' },
+    brideName: { type: 'string', labelAr: 'اسم العروس', labelEn: "Bride's Name", defaultAr: brideAr, defaultEn: 'Bride' },
+    eventDate: { type: 'date', labelAr: 'تاريخ ووقت الحفل', labelEn: 'Event Date & Time' },
+    eventLocation: { type: 'string', labelAr: 'مكان الحفل (القاعة)', labelEn: 'Event Venue (Hall Name)', defaultAr: locationAr, defaultEn: locationEn },
+    locationUrl: { type: 'string', labelAr: 'رابط موقع الحفل', labelEn: 'Location Map URL' },
+    welcomeText: { type: 'string', labelAr: 'رسالة الترحيب والبطاقة', labelEn: 'Welcome Message', defaultAr: 'مرحباً بكم في حفل زفافنا', defaultEn: 'Welcome to our wedding' },
+    musicUrl: { type: 'string', labelAr: 'رابط الصوت الخلفي', labelEn: 'Background Music URL' },
+    images: { type: 'array', labelAr: 'صور ألبوم العروسين', labelEn: 'Album Image URLs', defaultAr: [''], defaultEn: [''] },
+    eventProgram: { type: 'array', labelAr: 'برنامج الحفل', labelEn: 'Event Program / Timeline', defaultAr: [{ time: '', title: '' }], defaultEn: [{ time: '', title: '' }] },
+    eventDetails: { type: 'array', labelAr: 'تفاصيل الحفل / التعليمات', labelEn: 'Event Details / Guidelines', defaultAr: [{ text: '' }], defaultEn: [{ text: '' }] },
+  });
+
   const template1 = await prisma.template.create({
     data: {
       title: 'Royal Gold Wedding',
@@ -63,11 +77,7 @@ async function main() {
       demoLink: '/invite/royal-gold-demo',
       isPremium: true,
       category: 'Weddings',
-      editableFields: {
-        eventTitle: { type: 'string', label: 'Event Title', default: 'العريس & العروس' },
-        eventDate: { type: 'date', label: 'Event Date' },
-        eventLocation: { type: 'string', label: 'Event Location', default: 'قاعة السمو، الرياض' },
-      },
+      editableFields: getEditableFields('العريس', 'العروس', 'قاعة السمو، الرياض', 'Riyadh Hall'),
     },
   });
 
@@ -80,11 +90,7 @@ async function main() {
       demoLink: '/invite/garden-demo',
       isPremium: true,
       category: 'Weddings',
-      editableFields: {
-        eventTitle: { type: 'string', label: 'Event Title', default: 'أحمد & سارة' },
-        eventDate: { type: 'date', label: 'Event Date' },
-        eventLocation: { type: 'string', label: 'Event Location', default: 'حديقة الياسمين، الرياض' },
-      },
+      editableFields: getEditableFields('أحمد', 'سارة', 'حديقة الياسمين، الرياض', 'Jasmine Garden, Riyadh'),
     },
   });
 
@@ -97,11 +103,7 @@ async function main() {
       demoLink: '/invite/terracotta-demo',
       isPremium: true,
       category: 'Weddings',
-      editableFields: {
-        eventTitle: { type: 'string', label: 'Event Title', default: 'العريس & العروس' },
-        eventDate: { type: 'date', label: 'Event Date' },
-        eventLocation: { type: 'string', label: 'Event Location', default: 'قاعة السمو، الرياض' },
-      },
+      editableFields: getEditableFields('العريس', 'العروس', 'قاعة السمو، الرياض', 'Riyadh Hall'),
     },
   });
 
@@ -114,11 +116,7 @@ async function main() {
       demoLink: '/invite/lily-demo',
       isPremium: true,
       category: 'Weddings',
-      editableFields: {
-        eventTitle: { type: 'string', label: 'Event Title', default: 'أحمد & سارة' },
-        eventDate: { type: 'date', label: 'Event Date' },
-        eventLocation: { type: 'string', label: 'Event Location', default: 'حديقة الياسمين، الرياض' },
-      },
+      editableFields: getEditableFields('أحمد', 'سارة', 'حديقة الياسمين، الرياض', 'Jasmine Garden, Riyadh'),
     },
   });
 
@@ -131,11 +129,7 @@ async function main() {
       demoLink: '/invite/emerald-demo',
       isPremium: true,
       category: 'Weddings',
-      editableFields: {
-        eventTitle: { type: 'string', label: 'Event Title', default: 'العريس & العروس' },
-        eventDate: { type: 'date', label: 'Event Date' },
-        eventLocation: { type: 'string', label: 'Event Location', default: 'قاعة اليمامة، الرياض' },
-      },
+      editableFields: getEditableFields('العريس', 'العروس', 'قاعة اليمامة، الرياض', 'Al-Yamamah Hall, Riyadh'),
     },
   });
 
@@ -150,11 +144,7 @@ async function main() {
       demoLink: '/invite/white-gypsophila-demo',
       isPremium: true,
       category: 'Weddings',
-      editableFields: {
-        eventTitle: { type: 'string', label: 'Event Title', default: 'أحمد & سارة' },
-        eventDate: { type: 'date', label: 'Event Date' },
-        eventLocation: { type: 'string', label: 'Event Location', default: 'قاعة السمو، الرياض' },
-      },
+      editableFields: getEditableFields('أحمد', 'سارة', 'قاعة السمو، الرياض', 'Riyadh Hall'),
     },
   });
 
@@ -171,11 +161,7 @@ async function main() {
       demoLink: '/invite/flow-demo',
       isPremium: true,
       category: 'Weddings',
-      editableFields: {
-        eventTitle: { type: 'string', label: 'Event Title', default: 'أحمد & سارة' },
-        eventDate: { type: 'date', label: 'Event Date' },
-        eventLocation: { type: 'string', label: 'Event Location', default: 'قاعة السمو، الرياض' },
-      },
+      editableFields: getEditableFields('أحمد', 'سارة', 'قاعة السمو، الرياض', 'Riyadh Hall'),
     },
   });
 
@@ -192,11 +178,7 @@ async function main() {
       demoLink: '/invite/forest-foliage-demo',
       isPremium: true,
       category: 'Weddings',
-      editableFields: {
-        eventTitle: { type: 'string', label: 'Event Title', default: 'أحمد & سارة' },
-        eventDate: { type: 'date', label: 'Event Date' },
-        eventLocation: { type: 'string', label: 'Event Location', default: 'قاعة السمو، الرياض' },
-      },
+      editableFields: getEditableFields('أحمد', 'سارة', 'قاعة السمو، الرياض', 'Riyadh Hall'),
     },
   });
 

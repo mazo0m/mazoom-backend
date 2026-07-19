@@ -33,6 +33,11 @@ import { HealthModule } from './health/health.module';
       useFactory: async (config: ConfigService) => {
         const redisUrl = config.get<string>('REDIS_URL');
         if (redisUrl) {
+          console.log('✅ Using Redis');
+        } else {
+          console.log('⚠️ Using Memory Cache');
+        }
+        if (redisUrl) {
           const store = await redisStore({
             url: redisUrl,
             ttl: 60000, // 60 seconds
