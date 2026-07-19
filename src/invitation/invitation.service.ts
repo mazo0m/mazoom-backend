@@ -624,21 +624,14 @@ export class InvitationService {
   private mapInvitationResponse(invitation: any) {
     const { purchase, rsvps, ...invitationFields } = invitation;
 
-    const cloudFrontUrl = (
-      process.env.CLOUDFRONT_URL || 'https://d2d6zix8q0a7b9.cloudfront.net'
-    ).replace(/\/+$/, '');
-    const s3Domain =
-      'https://mazoom-media-storage-645819132086-eu-central-1-an.s3.eu-central-1.amazonaws.com';
+    const cloudFrontUrl = (process.env.CLOUDFRONT_URL || '').replace(/\/+$/, '');
 
     const sanitizeUrl = (url: string) => {
       if (!url) return url;
       const clean = url.split('?')[0]; // Strip presigned query string parameters
-      if (clean.startsWith(s3Domain)) {
-        return clean.replace(s3Domain, cloudFrontUrl);
-      }
       if (clean.includes('.s3.') && clean.includes('.amazonaws.com/')) {
         const parts = clean.split('.amazonaws.com/');
-        if (parts.length === 2) {
+        if (parts.length === 2 && cloudFrontUrl) {
           return `${cloudFrontUrl}/${parts[1].replace(/^\/+/, '')}`;
         }
       }

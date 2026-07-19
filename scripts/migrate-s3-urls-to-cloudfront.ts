@@ -7,17 +7,13 @@ import { PrismaService } from '../src/prisma/prisma.service';
 const config = new ConfigService();
 const prisma = new PrismaService(config);
 
-const S3_DOMAIN = 'https://mazoom-media-storage-645819132086-eu-central-1-an.s3.eu-central-1.amazonaws.com';
-const CLOUDFRONT_URL = (process.env.CLOUDFRONT_URL || 'https://d2d6zix8q0a7b9.cloudfront.net').replace(/\/+$/, '');
+const CLOUDFRONT_URL = (process.env.CLOUDFRONT_URL || '').replace(/\/+$/, '');
 
 function convertUrl(url: string): string {
-  if (!url) return url;
+  if (!url || !CLOUDFRONT_URL) return url;
   // Strip any presigned query string parameters (e.g. ?X-Amz-Algorithm=...)
   const cleanUrl = url.split('?')[0];
-  if (cleanUrl.startsWith(S3_DOMAIN)) {
-    return cleanUrl.replace(S3_DOMAIN, CLOUDFRONT_URL);
-  }
-  // Check generic S3 bucket URL format
+
   if (cleanUrl.includes('.s3.') && cleanUrl.includes('.amazonaws.com/')) {
     const parts = cleanUrl.split('.amazonaws.com/');
     if (parts.length === 2) {
@@ -31,8 +27,7 @@ function convertUrl(url: string): string {
 async function migrate() {
   await prisma.$connect();
   console.log('🚀 Starting Database Migration: S3 URLs -> CloudFront CDN URLs');
-  console.log(`CloudFront Base URL: ${CLOUDFRONT_URL}`);
-  console.log(`Target S3 Base URL: ${S3_DOMAIN}\n`);
+  console.log(`CloudFront Base URL: ${CLOUDFRONT_URL}\n`);
 
   // 1. Migrate Media Table
   const mediaRecords = await prisma.media.findMany();

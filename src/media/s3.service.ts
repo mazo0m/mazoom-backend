@@ -69,10 +69,17 @@ export class S3Service {
     const cleanKey = key.replace(/^\/+/, '');
     const cloudFrontUrl =
       this.configService.get<string>('CLOUDFRONT_URL') ||
-      process.env.CLOUDFRONT_URL ||
-      'https://d2d6zix8q0a7b9.cloudfront.net';
+      process.env.CLOUDFRONT_URL;
 
-    const baseUrl = cloudFrontUrl.replace(/\/+$/, '');
-    return `${baseUrl}/${cleanKey}`;
+    if (cloudFrontUrl) {
+      const baseUrl = cloudFrontUrl.replace(/\/+$/, '');
+      return `${baseUrl}/${cleanKey}`;
+    }
+
+    if (this.bucketName && this.region) {
+      return `https://${this.bucketName}.s3.${this.region}.amazonaws.com/${cleanKey}`;
+    }
+
+    return `/${cleanKey}`;
   }
 }
