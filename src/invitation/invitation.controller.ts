@@ -12,6 +12,9 @@ import {
   UploadedFile,
   BadRequestException,
   Req,
+  Query,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
 import * as express from 'express';
 import {
@@ -358,5 +361,47 @@ export class InvitationController {
     @Body() dto: ToggleStatusDto,
   ) {
     return this.invitationService.toggleStatus(id, dto.isActive);
+  }
+
+  /**
+   * GET /invitations/download-file
+   * Proxies a file download, forcing attachment headers to prevent opening in tab.
+   */
+  @Get('download-file')
+  async downloadFile(
+    @Query('url') url: string,
+    @Res({ passthrough: true }) res: express.Response,
+  ) {
+    if (!url) {
+      throw new BadRequestException('URL query parameter is required');
+    }
+
+    try {
+      const parsedUrl = new URL(url);
+      const allowedDomains = ['amazonaws.com', 'cloudfront.net', 'localhost', 'mazoom'];
+      const isAllowed = allowedDomains.some(domain => parsedUrl.hostname.includes(domain));
+      if (!isAllowed) {
+        throw new BadRequestException('Domain not allowed');
+      }
+    } catch {
+      throw new BadRequestException('Invalid URL');
+    }
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new BadRequestException('Failed to fetch file');
+      }
+
+      const filename = url.split('/').pop()?.split('?')[0] || 'download.jpg';
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Type', response.headers.get('content-type') || 'image/jpeg');
+
+      const { Readable } = require('stream');
+      const nodeStream = Readable.fromWeb(response.body as any);
+      return new StreamableFile(nodeStream);
+    } catch (err) {
+      throw new BadRequestException('Failed to stream file');
+    }
   }
 }
