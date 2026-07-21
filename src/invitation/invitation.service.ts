@@ -53,6 +53,7 @@ const UPDATABLE_ARRAY_FIELDS = [
   'hiddenMoments',
   'deletedMoments',
   'deletedImages',
+  'hiddenImages',
   'galleryOrder',
 ] as const;
 const UPDATABLE_BOOLEAN_FIELDS = ['isActive', 'allowGuestUploads', 'showMoments', 'allowCompanions'] as const;
@@ -204,13 +205,17 @@ export class InvitationService {
     // 4b. Perform automatic S3 storage and DB cleanup for removed images
     const urlsToRemove: string[] = [];
 
-    if (dto.images !== undefined) {
-      const dtoImages = dto.images;
+    if (dto.images !== undefined || dto.hiddenImages !== undefined) {
+      const dtoImages = dto.images || [];
+      const dtoHiddenImages = dto.hiddenImages || [];
+      const combinedDto = [...dtoImages, ...dtoHiddenImages];
       const dtoDeletedImages = dto.deletedImages || invitation.deletedImages || [];
-      const removedImages = invitation.images.filter(
-        img => !dtoImages.includes(img) && !dtoDeletedImages.includes(img)
-      );
-      urlsToRemove.push(...removedImages);
+      const removedImages = [
+        ...invitation.images.filter(img => !combinedDto.includes(img) && !dtoDeletedImages.includes(img)),
+        ...invitation.hiddenImages.filter(img => !combinedDto.includes(img) && !dtoDeletedImages.includes(img)),
+      ];
+      const uniqueRemovedImages = Array.from(new Set(removedImages));
+      urlsToRemove.push(...uniqueRemovedImages);
     }
     if (dto.moments !== undefined || dto.hiddenMoments !== undefined) {
       const dtoMoments = dto.moments || [];
@@ -353,10 +358,17 @@ export class InvitationService {
     const isOwnerOrAdmin =
       (userId && invitation.purchase.userId === userId) ||
       userRole === 'ADMIN';
-    if (!isOwnerOrAdmin && mapped.moments && mapped.hiddenMoments) {
-      mapped.moments = mapped.moments.filter(
-        (m: string) => !mapped.hiddenMoments.includes(m),
-      );
+    if (!isOwnerOrAdmin) {
+      if (mapped.moments && mapped.hiddenMoments) {
+        mapped.moments = mapped.moments.filter(
+          (m: string) => !mapped.hiddenMoments.includes(m),
+        );
+      }
+      if (mapped.images && mapped.hiddenImages) {
+        mapped.images = mapped.images.filter(
+          (img: string) => !mapped.hiddenImages.includes(img),
+        );
+      }
     }
     return mapped;
   }
@@ -682,6 +694,10 @@ export class InvitationService {
       ? invitationFields.deletedImages.map(sanitizeUrl)
       : invitationFields.deletedImages || [];
 
+    const hiddenImages = Array.isArray(invitationFields.hiddenImages)
+      ? invitationFields.hiddenImages.map(sanitizeUrl)
+      : invitationFields.hiddenImages || [];
+
     const galleryOrder = Array.isArray(invitationFields.galleryOrder)
       ? invitationFields.galleryOrder.map(sanitizeUrl)
       : invitationFields.galleryOrder || [];
@@ -693,6 +709,7 @@ export class InvitationService {
       hiddenMoments,
       deletedMoments,
       deletedImages,
+      hiddenImages,
       galleryOrder,
       userId: purchase?.userId,
       templateId: purchase?.templateId,

@@ -404,4 +404,19 @@ export class CreateInvitationDto {
     message: 'Gallery order URLs must not exceed 500 characters',
   })
   galleryOrder?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Array of photo URLs/paths for hidden host gallery images',
+    example: ['/public/uploads/image1.jpg'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100, { message: 'Hidden images list cannot exceed 100 items' })
+  @IsString({ each: true })
+  @MaxLength(500, {
+    each: true,
+    message: 'Hidden image URLs must not exceed 500 characters',
+  })
+  hiddenImages?: string[];
 }

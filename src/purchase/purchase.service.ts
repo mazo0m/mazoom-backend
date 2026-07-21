@@ -52,6 +52,7 @@ export class PurchaseService {
             hiddenMoments: true,
             deletedMoments: true,
             deletedImages: true,
+            hiddenImages: true,
             galleryOrder: true,
           },
         },
