@@ -202,54 +202,57 @@ export class InvitationService {
     if (dto.eventDate !== undefined) {
       updateData.eventDate = new Date(dto.eventDate);
     }
-    // 4b. Perform automatic S3 storage and DB cleanup for removed images
+    // 4b. Perform automatic S3 storage and DB cleanup for removed images, moments, and audio
     const urlsToRemove: string[] = [];
 
-    if (dto.images !== undefined || dto.hiddenImages !== undefined) {
-      const dtoImages = dto.images || [];
-      const dtoHiddenImages = dto.hiddenImages || [];
-      const combinedDto = [...dtoImages, ...dtoHiddenImages];
-      const dtoDeletedImages = dto.deletedImages || invitation.deletedImages || [];
-      const removedImages = [
-        ...invitation.images.filter(img => !combinedDto.includes(img) && !dtoDeletedImages.includes(img)),
-        ...invitation.hiddenImages.filter(img => !combinedDto.includes(img) && !dtoDeletedImages.includes(img)),
-      ];
-      const uniqueRemovedImages = Array.from(new Set(removedImages));
-      urlsToRemove.push(...uniqueRemovedImages);
+    // Background music track cleanup
+    if (dto.musicUrl !== undefined && invitation.musicUrl && dto.musicUrl !== invitation.musicUrl) {
+      urlsToRemove.push(invitation.musicUrl);
     }
-    if (dto.moments !== undefined || dto.hiddenMoments !== undefined) {
-      const dtoMoments = dto.moments || [];
-      const dtoHidden = dto.hiddenMoments || [];
-      const combinedDto = [...dtoMoments, ...dtoHidden];
-      const dtoDeletedMoments = dto.deletedMoments || invitation.deletedMoments || [];
 
-      const removedMoments = [
-        ...invitation.moments.filter(mom => !combinedDto.includes(mom) && !dtoDeletedMoments.includes(mom)),
-        ...invitation.hiddenMoments.filter(mom => !combinedDto.includes(mom) && !dtoDeletedMoments.includes(mom)),
+    // Gallery images cleanup
+    if (dto.images !== undefined || dto.hiddenImages !== undefined || dto.deletedImages !== undefined) {
+      const oldGallery = [...(invitation.images || []), ...(invitation.hiddenImages || []), ...(invitation.deletedImages || [])];
+      const newGallery = [
+        ...(dto.images ?? invitation.images ?? []),
+        ...(dto.hiddenImages ?? invitation.hiddenImages ?? []),
+        ...(dto.deletedImages ?? invitation.deletedImages ?? []),
       ];
-      const uniqueRemovedMoments = Array.from(new Set(removedMoments));
-      urlsToRemove.push(...uniqueRemovedMoments);
+      const removedImages = oldGallery.filter((url) => !newGallery.includes(url));
+      urlsToRemove.push(...removedImages);
+    }
+
+    // Guest moments cleanup
+    if (dto.moments !== undefined || dto.hiddenMoments !== undefined || dto.deletedMoments !== undefined) {
+      const oldMoments = [...(invitation.moments || []), ...(invitation.hiddenMoments || []), ...(invitation.deletedMoments || [])];
+      const newMoments = [
+        ...(dto.moments ?? invitation.moments ?? []),
+        ...(dto.hiddenMoments ?? invitation.hiddenMoments ?? []),
+        ...(dto.deletedMoments ?? invitation.deletedMoments ?? []),
+      ];
+      const removedMoments = oldMoments.filter((url) => !newMoments.includes(url));
+      urlsToRemove.push(...removedMoments);
     }
 
     if (urlsToRemove.length > 0) {
-      // Find matching media in DB to get keys
-      const mediaRecords = await this.prisma.media.findMany({
-        where: {
-          url: { in: urlsToRemove },
-        },
-      });
-
-      for (const record of mediaRecords) {
+      const uniqueUrls = Array.from(new Set(urlsToRemove.filter(Boolean)));
+      for (const url of uniqueUrls) {
         try {
-          // Delete from S3
-          await this.s3Service.deleteFile(record.key);
-          // Delete from DB
-          await this.prisma.media.delete({
-            where: { id: record.id },
+          // 1. Delete from AWS S3
+          await this.s3Service.deleteFileByUrl(url);
+
+          // 2. Delete matching Media DB record
+          const key = this.s3Service.extractKeyFromUrl(url);
+          const whereClause: any[] = [{ url }];
+          if (key) whereClause.push({ key });
+
+          await this.prisma.media.deleteMany({
+            where: {
+              OR: whereClause,
+            },
           });
         } catch (error) {
-          // Log and continue to not block the invitation update flow if a deletion fails
-          this.logger.error(`Automatic S3 cleanup failed for key ${record.key}:`, error);
+          this.logger.error(`Automatic S3/Media cleanup failed for URL ${url}:`, error);
         }
       }
     }
