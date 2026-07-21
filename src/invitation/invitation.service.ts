@@ -403,7 +403,7 @@ export class InvitationService {
   // Get RSVPs for an invitation (Client only — owner)
   // ──────────────────────────────────────────────
 
-  async findRsvps(invitationId: string, userId: string) {
+  async findRsvps(invitationId: string, userId: string, userRole?: string) {
     // 1. Find the invitation
     const invitation = await this.prisma.invitation.findUnique({
       where: { id: invitationId },
@@ -416,8 +416,8 @@ export class InvitationService {
       );
     }
 
-    // 2. Ensure the client owns this invitation
-    if (invitation.purchase.userId !== userId) {
+    // 2. Ensure the client owns this invitation OR user is an ADMIN
+    if (invitation.purchase.userId !== userId && userRole !== 'ADMIN') {
       throw new ForbiddenException('errors.unauthorized_rsvp');
     }
 

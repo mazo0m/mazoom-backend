@@ -284,14 +284,14 @@ export class InvitationController {
    * Client only (must be the invitation owner).
    */
   @Get(':id/rsvps')
-  @Roles(Role.CLIENT)
+  @Roles(Role.CLIENT, Role.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Get RSVPs for an invitation',
     description:
       'Returns all RSVP responses for a specific invitation, including attendance statistics. ' +
-      'Only the invitation owner can access this.',
+      'Accessible by the invitation owner or platform admins.',
   })
   @ApiParam({
     name: 'id',
@@ -301,27 +301,6 @@ export class InvitationController {
   @ApiResponse({
     status: 200,
     description: 'RSVPs with statistics',
-    schema: {
-      example: {
-        invitationId: 'e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b',
-        statistics: {
-          totalResponses: 25,
-          totalAttending: 38,
-          totalExcused: 5,
-          totalCompanions: 18,
-        },
-        rsvps: [
-          {
-            id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
-            invitationId: 'e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b',
-            guestName: 'محمد العلي',
-            willAttend: true,
-            companionsCount: 2,
-            createdAt: '2025-09-05T10:30:00.000Z',
-          },
-        ],
-      },
-    },
   })
   @ApiResponse({
     status: 401,
@@ -329,14 +308,15 @@ export class InvitationController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden — you are not the invitation owner',
+    description: 'Forbidden — you are not authorized to view RSVPs for this invitation',
   })
   @ApiResponse({ status: 404, description: 'Invitation not found' })
   findRsvps(
     @Param('id', ParseUUIDPipe) id: string,
     @GetUser('id') userId: string,
+    @GetUser('role') role: Role,
   ) {
-    return this.invitationService.findRsvps(id, userId);
+    return this.invitationService.findRsvps(id, userId, role);
   }
 
   /**
@@ -378,10 +358,8 @@ export class InvitationController {
 
     try {
       const parsedUrl = new URL(url);
-      const allowedDomains = ['amazonaws.com', 'cloudfront.net', 'localhost', 'mazoom'];
-      const isAllowed = allowedDomains.some(domain => parsedUrl.hostname.includes(domain));
-      if (!isAllowed) {
-        throw new BadRequestException('Domain not allowed');
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        throw new BadRequestException('Invalid URL protocol');
       }
     } catch {
       throw new BadRequestException('Invalid URL');

@@ -91,6 +91,36 @@ export class CouponService {
         _count: {
           select: { purchaseRequests: true },
         },
+        purchaseRequests: {
+          select: {
+            id: true,
+            userId: true,
+            contactEmail: true,
+            contactPhone: true,
+            status: true,
+            discountAmount: true,
+            finalPrice: true,
+            createdAt: true,
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phoneNumber: true,
+              },
+            },
+            template: {
+              select: {
+                id: true,
+                title: true,
+                previewImage: true,
+                price: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -105,6 +135,36 @@ export class CouponService {
       include: {
         _count: {
           select: { purchaseRequests: true },
+        },
+        purchaseRequests: {
+          select: {
+            id: true,
+            userId: true,
+            contactEmail: true,
+            contactPhone: true,
+            status: true,
+            discountAmount: true,
+            finalPrice: true,
+            createdAt: true,
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phoneNumber: true,
+              },
+            },
+            template: {
+              select: {
+                id: true,
+                title: true,
+                previewImage: true,
+                price: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
         },
       },
     });

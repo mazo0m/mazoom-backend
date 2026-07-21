@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -20,7 +21,21 @@ export class PurchaseRequestService {
   // ──────────────────────────────────────────────
 
   async create(userId: string, dto: CreatePurchaseRequestDto) {
-    // 1. Verify template exists
+    // 1. Check if user already has a pending purchase request
+    const pendingRequest = await this.prisma.purchaseRequest.findFirst({
+      where: {
+        userId,
+        status: RequestStatus.PENDING,
+      },
+    });
+
+    if (pendingRequest) {
+      throw new ConflictException(
+        'errors.pending_purchase_request_exists|You already have a pending purchase request. Please wait for the administrator to review it before creating another request.',
+      );
+    }
+
+    // 2. Verify template exists
     const template = await this.prisma.template.findUnique({
       where: { id: dto.templateId },
     });
