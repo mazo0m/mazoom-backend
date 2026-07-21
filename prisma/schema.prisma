@@ -122,6 +122,9 @@ model Invitation {
   isActive          Boolean  @default(true) @map("is_active")
   languageMode      String   @default("both") @map("language_mode")
   moments           String[] @default([])
+  hiddenMoments     String[] @default([]) @map("hidden_moments")
+  deletedMoments    String[] @default([]) @map("deleted_moments")
+  deletedImages     String[] @default([]) @map("deleted_images")
   purchaseId        String   @unique @map("purchase_id") @db.Uuid
   updatedAt         DateTime @updatedAt @map("updated_at")
   welcomeTextAr     String?  @map("welcome_text_ar")

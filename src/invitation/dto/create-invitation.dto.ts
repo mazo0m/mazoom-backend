@@ -344,4 +344,49 @@ export class CreateInvitationDto {
     message: 'Moment URLs must not exceed 500 characters',
   })
   moments?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Array of photo URLs/paths for hidden moments',
+    example: ['/public/uploads/moment1.jpg'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100, { message: 'Hidden moments photo list cannot exceed 100 items' })
+  @IsString({ each: true })
+  @MaxLength(500, {
+    each: true,
+    message: 'Hidden moment URLs must not exceed 500 characters',
+  })
+  hiddenMoments?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Array of photo URLs/paths for soft-deleted moments',
+    example: ['/public/uploads/moment1.jpg'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100, { message: 'Deleted moments list cannot exceed 100 items' })
+  @IsString({ each: true })
+  @MaxLength(500, {
+    each: true,
+    message: 'Deleted moment URLs must not exceed 500 characters',
+  })
+  deletedMoments?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Array of photo URLs/paths for soft-deleted host gallery images',
+    example: ['/public/uploads/image1.jpg'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100, { message: 'Deleted images list cannot exceed 100 items' })
+  @IsString({ each: true })
+  @MaxLength(500, {
+    each: true,
+    message: 'Deleted image URLs must not exceed 500 characters',
+  })
+  deletedImages?: string[];
 }
