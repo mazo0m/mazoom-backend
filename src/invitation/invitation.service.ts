@@ -53,6 +53,7 @@ const UPDATABLE_ARRAY_FIELDS = [
   'hiddenMoments',
   'deletedMoments',
   'deletedImages',
+  'galleryOrder',
 ] as const;
 const UPDATABLE_BOOLEAN_FIELDS = ['isActive', 'allowGuestUploads', 'showMoments', 'allowCompanions'] as const;
 
@@ -681,6 +682,10 @@ export class InvitationService {
       ? invitationFields.deletedImages.map(sanitizeUrl)
       : invitationFields.deletedImages || [];
 
+    const galleryOrder = Array.isArray(invitationFields.galleryOrder)
+      ? invitationFields.galleryOrder.map(sanitizeUrl)
+      : invitationFields.galleryOrder || [];
+
     return {
       ...invitationFields,
       images,
@@ -688,6 +693,7 @@ export class InvitationService {
       hiddenMoments,
       deletedMoments,
       deletedImages,
+      galleryOrder,
       userId: purchase?.userId,
       templateId: purchase?.templateId,
       template: purchase?.template,

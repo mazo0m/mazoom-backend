@@ -125,6 +125,7 @@ model Invitation {
   hiddenMoments     String[] @default([]) @map("hidden_moments")
   deletedMoments    String[] @default([]) @map("deleted_moments")
   deletedImages     String[] @default([]) @map("deleted_images")
+  galleryOrder      String[] @default([]) @map("gallery_order")
   purchaseId        String   @unique @map("purchase_id") @db.Uuid
   updatedAt         DateTime @updatedAt @map("updated_at")
   welcomeTextAr     String?  @map("welcome_text_ar")

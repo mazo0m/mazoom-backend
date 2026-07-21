@@ -389,4 +389,19 @@ export class CreateInvitationDto {
     message: 'Deleted image URLs must not exceed 500 characters',
   })
   deletedImages?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Unified array of photo URLs defining the custom display sequence',
+    example: ['/public/uploads/image1.jpg', '/public/uploads/moment1.jpg'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(200, { message: 'Gallery order list cannot exceed 200 items' })
+  @IsString({ each: true })
+  @MaxLength(500, {
+    each: true,
+    message: 'Gallery order URLs must not exceed 500 characters',
+  })
+  galleryOrder?: string[];
 }
