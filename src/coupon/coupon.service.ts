@@ -120,7 +120,7 @@ export class CouponService {
   // Update Coupon (Admin)
   // ──────────────────────────────────────────────
   async update(id: string, dto: UpdateCouponDto) {
-    await this.findOne(id);
+    const coupon = await this.findOne(id);
 
     const dataToUpdate: any = {};
 
@@ -144,6 +144,11 @@ export class CouponService {
     }
 
     if (dto.maxUses !== undefined) {
+      if (dto.maxUses !== null && dto.maxUses < coupon.usedCount) {
+        throw new BadRequestException(
+          `errors.max_uses_cannot_be_less_than_used_count|${coupon.usedCount}`,
+        );
+      }
       dataToUpdate.maxUses = dto.maxUses;
     }
 

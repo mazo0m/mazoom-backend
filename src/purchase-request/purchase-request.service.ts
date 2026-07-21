@@ -68,53 +68,75 @@ export class PurchaseRequestService {
       couponCode = coupon.code;
       discountAmount = (Number(template.price) * coupon.discountPercent) / 100;
       finalPrice = Number(template.price) - discountAmount;
-
-      // Increment coupon usage count
-      await this.prisma.coupon.update({
-        where: { id: coupon.id },
-        data: { usedCount: { increment: 1 } },
-      });
     }
 
-    // 3. Create purchase request
-    const request = await this.prisma.purchaseRequest.create({
-      data: {
-        userId,
-        templateId: dto.templateId,
-        contactEmail: dto.contactEmail,
-        contactPhone: dto.contactPhone,
-        languageMode: dto.languageMode || 'both',
-        status: RequestStatus.PENDING,
-        couponId,
-        couponCode,
-        discountAmount,
-        finalPrice,
-      },
-      include: {
-        template: {
-          select: {
-            id: true,
-            title: true,
-            previewImage: true,
-            price: true,
+    // 3. Auto-approve if final price is 0 (e.g. 100% discount coupon)
+    const isAutoApproved = finalPrice <= 0;
+    const status = isAutoApproved ? RequestStatus.APPROVED : RequestStatus.PENDING;
+
+    // 4. Create purchase request and optional purchase record in transaction
+    const request = await this.prisma.$transaction(async (tx) => {
+      if (couponId) {
+        await tx.coupon.update({
+          where: { id: couponId },
+          data: { usedCount: { increment: 1 } },
+        });
+      }
+
+      const createdRequest = await tx.purchaseRequest.create({
+        data: {
+          userId,
+          templateId: dto.templateId,
+          contactEmail: dto.contactEmail,
+          contactPhone: dto.contactPhone,
+          languageMode: dto.languageMode || 'both',
+          status,
+          couponId,
+          couponCode,
+          discountAmount,
+          finalPrice,
+        },
+        include: {
+          template: {
+            select: {
+              id: true,
+              title: true,
+              previewImage: true,
+              price: true,
+            },
+          },
+          coupon: {
+            select: {
+              id: true,
+              code: true,
+              discountPercent: true,
+            },
           },
         },
-        coupon: {
-          select: {
-            id: true,
-            code: true,
-            discountPercent: true,
+      });
+
+      if (isAutoApproved) {
+        const slug = `invite-${randomUUID().substring(0, 8)}`;
+        const purchase = await tx.purchase.create({
+          data: {
+            userId,
+            templateId: dto.templateId,
+            purchaseRequestId: createdRequest.id,
+            slug,
+            languageMode: dto.languageMode || 'both',
           },
-        },
-      },
+        });
+        (createdRequest as any).purchase = purchase;
+      }
+
+      return createdRequest;
     });
 
-    // 4. Update User phone number in profile if not already set (e.g. Google auth user)
+    // 5. Update User phone number in profile if not already set (e.g. Google auth user)
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
     if (user && (!user.phoneNumber || user.phoneNumber.trim() === '')) {
-      // Check if phone number is already in use by another user to avoid unique constraint error
       const existingPhoneUser = await this.prisma.user.findFirst({
         where: { phoneNumber: dto.contactPhone.trim() },
       });
