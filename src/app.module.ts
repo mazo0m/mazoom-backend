@@ -20,6 +20,7 @@ import { UploadModule } from './upload/upload.module';
 import { MediaModule } from './media/media.module';
 import { TestimonialModule } from './testimonial/testimonial.module';
 import { HealthModule } from './health/health.module';
+import { CouponModule } from './coupon/coupon.module';
 
 
 @Module({
@@ -72,6 +73,7 @@ import { HealthModule } from './health/health.module';
     MediaModule,
     TestimonialModule,
     HealthModule,
+    CouponModule,
   ],
   controllers: [AppController],
   providers: [
