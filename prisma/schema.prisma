@@ -264,6 +264,13 @@ enum MediaType {
   AUDIO
 }
 
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
 model Media {
   id        String    @id @default(uuid()) @db.Uuid
   url       String
@@ -275,4 +282,24 @@ model Media {
 
   @@map("media")
 }
+
+/// Digital template orders processed via Tap Payments (goSell API)
+model Order {
+  id              String      @id @default(uuid()) @db.Uuid
+  customerName    String      @map("customer_name")
+  customerEmail   String      @map("customer_email")
+  templateDetails Json        @map("template_details")
+  amount          Decimal     @db.Decimal(10, 2)
+  currency        String      @default("KWD")
+  tapChargeId     String?     @unique @map("tap_charge_id")
+  status          OrderStatus @default(PENDING)
+  failureReason   String?     @map("failure_reason")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([customerEmail])
+  @@map("orders")
+}
+
 

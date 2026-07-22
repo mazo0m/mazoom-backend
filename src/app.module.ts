@@ -21,7 +21,7 @@ import { MediaModule } from './media/media.module';
 import { TestimonialModule } from './testimonial/testimonial.module';
 import { HealthModule } from './health/health.module';
 import { CouponModule } from './coupon/coupon.module';
-
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -74,6 +74,7 @@ import { CouponModule } from './coupon/coupon.module';
     TestimonialModule,
     HealthModule,
     CouponModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [
