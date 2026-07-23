@@ -22,9 +22,11 @@ import { TestimonialModule } from './testimonial/testimonial.module';
 import { HealthModule } from './health/health.module';
 import { CouponModule } from './coupon/coupon.module';
 import { PaymentModule } from './payment/payment.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
+    MailModule,
     // Load .env variables globally
     ConfigModule.forRoot({ isGlobal: true }),
     AbuseModule,

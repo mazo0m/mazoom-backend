@@ -11,7 +11,15 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import * as express from 'express';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto, GoogleLoginDto, RefreshDto } from './dto';
+import {
+  RegisterDto,
+  LoginDto,
+  GoogleLoginDto,
+  RefreshDto,
+  SendOtpDto,
+  ForgotPasswordSendOtpDto,
+  ForgotPasswordResetDto,
+} from './dto';
 import { AbuseService } from '../common/services/abuse.service';
 
 /** Shared cookie configuration for access tokens. */
@@ -27,6 +35,7 @@ const REFRESH_TOKEN_COOKIE_OPTIONS: express.CookieOptions = {
   httpOnly: true,
   secure: true,
   sameSite: 'none',
+  path: '/auth',
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
@@ -65,6 +74,51 @@ export class AuthController {
   // ──────────────────────────────────────────────
   // Endpoints
   // ──────────────────────────────────────────────
+
+  /**
+   * POST /auth/send-otp
+   * Sends an OTP verification code to the target email.
+   */
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @Post('send-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Send registration OTP code to email',
+    description: 'Generates a 6-digit OTP code and emails it to the user.',
+  })
+  async sendOtp(@Body() dto: SendOtpDto) {
+    return this.authService.sendRegisterOtp(dto);
+  }
+
+  /**
+   * POST /auth/forgot-password/send-otp
+   * Sends a 6-digit OTP code to the user's email for password reset.
+   */
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @Post('forgot-password/send-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Send forgot password OTP code to email',
+    description: 'Generates a 6-digit OTP code and emails it to registered user.',
+  })
+  async sendForgotPasswordOtp(@Body() dto: ForgotPasswordSendOtpDto) {
+    return this.authService.sendForgotPasswordOtp(dto);
+  }
+
+  /**
+   * POST /auth/forgot-password/reset
+   * Verifies OTP code and updates user's password.
+   */
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @Post('forgot-password/reset')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Reset password with OTP verification code',
+    description: 'Verifies 6-digit OTP code and resets user password.',
+  })
+  async resetPasswordWithOtp(@Body() dto: ForgotPasswordResetDto) {
+    return this.authService.resetPasswordWithOtp(dto);
+  }
 
   /**
    * POST /auth/register

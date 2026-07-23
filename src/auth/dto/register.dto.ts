@@ -63,4 +63,12 @@ export class RegisterDto {
       'Phone number must be a valid international format (e.g. +966501234567)',
   })
   phoneNumber: string;
+
+  @ApiProperty({
+    description: '6-digit OTP verification code',
+    example: '123456',
+  })
+  @IsString()
+  @IsNotEmpty({ message: 'OTP verification code is required' })
+  otp: string;
 }

@@ -302,4 +302,18 @@ model Order {
   @@map("orders")
 }
 
+/// Verification OTP codes stored in DB before user creation
+model EmailOtp {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  code      String
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([email])
+  @@map("email_otps")
+}
+
+
 
